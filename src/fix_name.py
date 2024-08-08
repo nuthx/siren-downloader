@@ -1,5 +1,5 @@
 def fix_name(name):
-    (name
+    name = (name
      .replace("  ", " ")
      .replace("<", " ")
      .replace(">", " ")
