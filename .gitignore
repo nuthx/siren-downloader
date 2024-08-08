@@ -1,5 +1,5 @@
 .DS_Store
-download.json
+data.json
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
