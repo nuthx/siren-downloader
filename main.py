@@ -14,7 +14,7 @@ if __name__ == "__main__":
 
     # 拉取官网的歌曲信息
     print("——————————")
-    print("获取在线专辑")
+    print("正在获取在线专辑")
     song_list = fetch_all_songs()
     print(f"共{song_list['count']}首音乐，其中{song_list['instrumental']}首伴奏")
 
