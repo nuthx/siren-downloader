@@ -12,6 +12,7 @@ from src.fix_name import fix_name
 
 
 def download_music(song):
+    album_name = song["album"]
     song_name = song["title"]
     album_name = song["album"]
 
@@ -27,7 +28,7 @@ def download_music(song):
     song_file = requests.get(song["source"], stream=True)
     file_size = int(song_file.headers.get('content-length', 0))
     with open(song_path, "wb") as file, tqdm.tqdm(
-        desc=f"正在下载：{song_name}.{song['format']}",
+        desc=f"正在下载：{song_name} [{album_name}]",
         total=file_size,
         unit='B',
         unit_scale=True,

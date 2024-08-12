@@ -10,7 +10,6 @@ from src.update_data import update_data
 
 if __name__ == "__main__":
     print("明日方舟塞壬唱片专辑下载器")
-    print("版本 2.0.0")
 
     # 拉取官网的歌曲信息
     print("——————————")
@@ -21,6 +20,12 @@ if __name__ == "__main__":
     # 通过歌曲数量，检查本地是否最新
     print("——————————")
     song_list = update_data(song_list)
+
+    # 没有下载就结束任务
+    if not any(need_download(song) for song in song_list["songs"]):
+        print("——————————")
+        print("没有需要下载的音乐")
+        exit()
 
     # 确认下载路径
     if not check_folder(load_config("default", "download_path")):

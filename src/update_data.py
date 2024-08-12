@@ -19,7 +19,7 @@ def update_data(song_list):
     if len_new > len_local:
         missing = song_list["songs"][len_local:]
         song_list_local["songs"].extend(missing)
-        print(f"新增了{len(missing)}首音乐")
+        print(f"发现{len(missing)}首新增音乐")
 
     # 更新专辑数据：全部
     if not load_config("debug", "skip_album_update", bool=True):
