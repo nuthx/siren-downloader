@@ -6,6 +6,7 @@ import threading
 
 from src.load_config import load_config
 from src.check_download import need_download
+from src.calc_instrument_num import calc_instrument_num
 
 
 def fetch_all_songs():
@@ -42,15 +43,8 @@ def fetch_all_songs():
     # 默认新歌在最前，需要反转排序
     song_list["songs"].reverse()
 
-    # 识别伴奏
-    instrumental = 0
-    for song in song_list["songs"]:
-        if "instrument" in song["title"].lower():
-            song["instrumental"] = 1
-            instrumental += 1
-
     # 写入伴奏数量
-    song_list["instrumental"] = instrumental
+    song_list["instrumental"] = calc_instrument_num(song_list)
 
     return song_list
 

@@ -2,6 +2,7 @@ import os
 import json
 
 from src.load_config import load_config
+from src.calc_instrument_num import calc_instrument_num
 from src.fetch_data import fetch_album_data, fetch_song_data
 
 
@@ -17,6 +18,13 @@ def update_data(song_list):
     len_local = len(song_list_local["songs"])
     len_new = len(song_list["songs"])
     if len_new > len_local:
+        # 写入歌曲总数
+        song_list_local["count"] = len_new
+
+        # 写入伴奏总数
+        song_list_local["instrumental"] = calc_instrument_num(song_list_local)
+
+        # 写入歌曲详情
         missing = song_list["songs"][len_local:]
         song_list_local["songs"].extend(missing)
         print(f"发现{len(missing)}首新增音乐")
