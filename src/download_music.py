@@ -16,7 +16,8 @@ def download_music(song):
     song_name = song["title"]
     album_name = song["album"]
 
-    album_path = os.path.join(load_config("default", "download_path"), fix_name(album_name))
+    expanded_path = os.path.expanduser(load_config("default", "download_path"))
+    album_path = os.path.join(expanded_path, fix_name(album_name))
     song_path = os.path.join(album_path, fix_name(song_name)) + "." + song["format"]
     flac_path = os.path.join(album_path, fix_name(song_name)) + ".flac"
 
