@@ -42,7 +42,7 @@ def download_music(song):
     # 转码
     if song["format"] == "wav":
         print(f"开始转码：{song_name}")
-        command = f"ffmpeg -i '{song_path}' -codec:a flac -level 0 -y '{flac_path}' -loglevel quiet"
+        command = f'ffmpeg -i "{song_path}" -codec:a flac -level 0 -y "{flac_path}" -loglevel error'
         os.system(command)
         send2trash.send2trash(song_path)
 
