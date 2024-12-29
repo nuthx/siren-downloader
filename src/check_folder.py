@@ -2,8 +2,9 @@ import os
 
 
 def check_folder(name):
-    if os.path.exists(os.path.expanduser(name)):
+    path = os.path.expanduser(name)
+    if os.path.exists(path):
         return True
     else:
-        os.mkdir(os.path.expanduser(name))
+        os.makedirs(path, exist_ok=True)
         return False
