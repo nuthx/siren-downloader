@@ -105,7 +105,11 @@ def fetch_album_data(song_list):
     api_url = load_config("default", "ncm_api")
     ncm_response = requests.get(api_url + "/artist/album?id=32540734&limit=1000").json()
     for song in song_list["songs"]:
-        ncm_dict = next(album for album in ncm_response["hotAlbums"] if album["name"] == song["album"])
+        try:
+            ncm_dict = next(album for album in ncm_response["hotAlbums"] if album["name"] == song["album"])
+        except StopIteration:
+            print(f"跳过：{song['title']}所在的专辑{song['album']}与网易云名称不匹配，请更新匹配规则")
+            continue
         song["publish"] = datetime.datetime.fromtimestamp(ncm_dict["publishTime"] / 1000).strftime("%Y-%m-%d")
         song["cover_ncm"] = ncm_dict["picUrl"]
 
