@@ -22,7 +22,7 @@ def update_data(song_list):
         song_list_local["count"] = len_new
 
         # 写入伴奏总数
-        song_list_local["instrumental"] = calc_instrument_num(song_list_local)
+        song_list_local["instrumental"] = song_list["instrumental"]
 
         # 写入歌曲详情
         missing = song_list["songs"][len_local:]
