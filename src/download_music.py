@@ -8,7 +8,7 @@ from mutagen.id3 import ID3, TIT2, TPE1, TRCK, TALB, TDRC, TCON, TPE2, TPOS, API
 from src.load_config import load_config
 from src.check_folder import check_folder
 from src.compare_cover import compare_cover
-from src.fix_name import fix_name
+from src.fix_name import fix_name, fix_folder
 
 
 def download_music(song):
@@ -17,7 +17,7 @@ def download_music(song):
     album_name = song["album"]
 
     expanded_path = os.path.expanduser(load_config("default", "download_path"))
-    album_path = os.path.join(expanded_path, fix_name(album_name))
+    album_path = os.path.join(expanded_path, fix_folder(album_name))
     song_path = os.path.join(album_path, fix_name(song_name)) + "." + song["format"]
     flac_path = os.path.join(album_path, fix_name(song_name)) + ".flac"
 
