@@ -8,7 +8,7 @@
 
 ```
 git clone https://github.com/nuthx/bangumi-renamer.git
-cd NeteaseCloudMusicApi
+cd bangumi-renamer
 pip install requirements.txt
 ```
 
