@@ -7,7 +7,7 @@ from mutagen.id3 import ID3, TIT2, TPE1, TRCK, TALB, TDRC, TCON, TPE2, TPOS, API
 
 from src.load_config import load_config
 from src.check_folder import check_folder
-from src.compare_cover import compare_cover
+from src.best_cover import best_cover
 from src.fix_name import fix_name, fix_folder
 
 
@@ -63,7 +63,7 @@ def download_music(song):
         cover = Picture()
         cover.type = 3
         cover.mime = 'image/jpeg'
-        cover.data = compare_cover(song)
+        cover.data = best_cover(song)
         flac.clear_pictures()
         flac.add_picture(cover)
         flac.save()
@@ -82,7 +82,7 @@ def download_music(song):
         mp3["TCON"] = TCON(encoding=3, text="Arknights")
 
         # 写入封面
-        cover_data = compare_cover(song)
+        cover_data = best_cover(song)
         apic = APIC(encoding=3, mime="image/jpeg", type=3, data=cover_data)
         mp3.add(apic)
         mp3.save()
