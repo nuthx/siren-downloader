@@ -1,4 +1,5 @@
 import os
+import subprocess
 import tqdm
 import requests
 import send2trash
@@ -19,7 +20,9 @@ def download_music(song):
     expanded_path = os.path.expanduser(load_config("default", "download_path"))
     album_path = os.path.join(expanded_path, fix_folder(album_name))
     song_path = os.path.join(album_path, fix_name(song_name)) + "." + song["format"]
+    song_path = os.path.normpath(song_path) # 整理路径格式
     flac_path = os.path.join(album_path, fix_name(song_name)) + ".flac"
+    lrc_path = os.path.join(album_path, fix_name(song_name)) + ".lrc"
 
     # 开始下载
     check_folder(album_path)
@@ -28,6 +31,8 @@ def download_music(song):
     # 显示进度条
     song_file = requests.get(song["source"], stream=True)
     file_size = int(song_file.headers.get('content-length', 0))
+    lrc_file = requests.get(song["lrc"], stream=True)
+    lrc_file_size = int(lrc_file.headers.get('content-length', 0))
     with open(song_path, "wb") as file, tqdm.tqdm(
         desc=f"正在下载：{song_name} [{album_name}]",
         total=file_size,
@@ -38,13 +43,28 @@ def download_music(song):
         for data in song_file.iter_content(chunk_size=1024):
             file.write(data)
             bar.update(len(data))
+    # 下载歌词
+    with open(lrc_path, "wb") as file, tqdm.tqdm(
+        desc=f"正在下载歌词：{song_name} [{album_name}]",
+        total=lrc_file_size,
+        unit='B',
+        unit_scale=True,
+        unit_divisor=1024,
+    ) as bar:
+        for data in lrc_file.iter_content(chunk_size=1024):
+            file.write(data)
+            bar.update(len(data))
 
     # 转码
     if song["format"] == "wav":
         print(f"开始转码：{song_name}")
         command = f'ffmpeg -i "{song_path}" -codec:a flac -level 0 -y "{flac_path}" -loglevel error'
         os.system(command)
-        send2trash.send2trash(song_path)
+        result = subprocess.run(command, shell=True)
+        if result.returncode == 0:  # 成功后再删除
+            send2trash.send2trash(song_path)
+        else:
+            print("转码失败！")
 
     # 写入ID3
     print(f"写入标签：{song_name}")

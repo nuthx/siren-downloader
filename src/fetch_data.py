@@ -31,6 +31,7 @@ def fetch_all_songs():
             "album": "",
             "album_id": list["albumCid"],
             "source": "",
+            "lrc": "",
             "cover": "",
             "cover_ncm": "",
             "format": "",
@@ -121,6 +122,7 @@ def fetch_song_data(song_list):
             url = f"https://monster-siren.hypergryph.com/api/song/{song['title_id']}"
             song_data = requests.get(url).json()
             song["source"] = song_data["data"]["sourceUrl"]
+            song["lrc"] = song_data["data"]["lyricUrl"]
             song["format"] = os.path.splitext(song["source"])[1].replace(".", "")
 
     # 创建线程
