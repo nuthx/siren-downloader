@@ -7,8 +7,8 @@
 需要 Python 环境
 
 ```
-git clone https://github.com/nuthx/bangumi-renamer.git
-cd bangumi-renamer
+git clone https://github.com/nuthx/siren-downloader.git
+cd siren-downloader
 pip install requirements.txt
 ```
 
