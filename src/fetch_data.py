@@ -50,19 +50,22 @@ def fetch_all_songs():
 
 
 def fetch_album_data(song_list):
-    # 将需要下载的专辑加入album_list
+    # 只将需要下载的歌曲的专辑加入album_list
     album_list = []
     for song in song_list["songs"]:
-        album_list.append({
-            "album_id": song["album_id"],
-            "album": "",
-            "album_ncm": "",
-            "cover": ""
-        })
+        if need_download(song):
+            album_list.append({
+                "album_id": song["album_id"],
+                "album": "",
+                "album_ncm": "",
+                "cover": ""
+            })
 
     # 去重：先转为元组，再转为列表
     album_list = list({tuple(album.items()) for album in album_list})
     album_list = [dict(album) for album in album_list]
+
+    print(f"待拉取{len(album_list)}条专辑信息")
 
     # 获取单个专辑信息
     def fetch_album(album):
@@ -97,21 +100,23 @@ def fetch_album_data(song_list):
     # 保存到song_list
     for song in song_list["songs"]:
         # 查找album_list对应album_id的字典
-        album_dict = next(album for album in album_list if album["album_id"] == song["album_id"])
-        song["album"] = album_dict["album_ncm"]  # 使用网易云名称作为专辑名
-        song["cover"] = album_dict["cover"]
+        album_dict = next((album for album in album_list if album["album_id"] == song["album_id"]), None)
+        if album_dict:
+            song["album"] = album_dict["album_ncm"]  # 使用网易云名称作为专辑名
+            song["cover"] = album_dict["cover"]
 
     # 从网易云api获取专辑封面与发布日期
     api_url = load_config("default", "ncm_api")
     ncm_response = requests.get(api_url + "/artist/album?id=32540734&limit=1000").json()
     for song in song_list["songs"]:
-        try:
-            ncm_dict = next(album for album in ncm_response["hotAlbums"] if album["name"] == song["album"])
-        except StopIteration:
-            print(f"跳过：{song['title']}所在的专辑{song['album']}与网易云名称不匹配，请更新匹配规则")
-            continue
-        song["publish"] = datetime.datetime.fromtimestamp(ncm_dict["publishTime"] / 1000).strftime("%Y-%m-%d")
-        song["cover_ncm"] = ncm_dict["picUrl"]
+        if song.get("album"):  # 只处理需要下载的歌曲
+            try:
+                ncm_dict = next(album for album in ncm_response["hotAlbums"] if album["name"] == song["album"])
+            except StopIteration:
+                print(f"跳过：{song['title']}所在的专辑{song['album']}与网易云名称不匹配，请更新匹配规则")
+                continue
+            song["publish"] = datetime.datetime.fromtimestamp(ncm_dict["publishTime"] / 1000).strftime("%Y-%m-%d")
+            song["cover_ncm"] = ncm_dict["picUrl"]
 
 
 def fetch_song_data(song_list):
