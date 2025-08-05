@@ -49,7 +49,7 @@ def fetch_all_songs():
     return song_list
 
 
-def fetch_album_data(song_list):
+def fetch_album_data(song_list, progress_callback=None):
     # 将需要下载的专辑加入album_list
     album_list = []
     for song in song_list["songs"]:
@@ -65,11 +65,19 @@ def fetch_album_data(song_list):
     album_list = [dict(album) for album in album_list]
 
     # 获取单个专辑信息
+    completed_count = [0]  # 使用列表来在闭包中修改值
+    total_count = len(album_list)
+    
     def fetch_album(album):
         url = f"https://monster-siren.hypergryph.com/api/album/{album['album_id']}/detail"
         album_data = requests.get(url).json()
         album["album"] = album_data["data"]["name"].strip()  # 部分专辑名称后有个空格（乌鱼子）
         album["cover"] = album_data["data"]["coverUrl"]
+        
+        # 更新进度
+        completed_count[0] += 1
+        if progress_callback:
+            progress_callback(completed_count[0], total_count)
 
     # 创建线程
     threads = []
@@ -114,14 +122,22 @@ def fetch_album_data(song_list):
         song["cover_ncm"] = ncm_dict["picUrl"]
 
 
-def fetch_song_data(song_list):
+def fetch_song_data(song_list, progress_callback=None):
     # 只获取需要下载的歌曲信息
+    completed_count = [0]  # 使用列表来在闭包中修改值
+    total_count = len(song_list["songs"])
+    
     def fetch_song(song):
         if need_download(song):
             url = f"https://monster-siren.hypergryph.com/api/song/{song['title_id']}"
             song_data = requests.get(url).json()
             song["source"] = song_data["data"]["sourceUrl"]
             song["format"] = os.path.splitext(song["source"])[1].replace(".", "")
+        
+        # 更新进度
+        completed_count[0] += 1
+        if progress_callback:
+            progress_callback(completed_count[0], total_count)
 
     # 创建线程
     threads = []
