@@ -16,7 +16,7 @@
 ```
 git clone https://github.com/nuthx/siren-downloader.git
 cd siren-downloader
-pip install requirements.txt
+pip install -r requirements.txt
 ```
 
 ## 设置
