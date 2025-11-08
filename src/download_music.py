@@ -3,7 +3,7 @@ import tqdm
 import requests
 import send2trash
 from mutagen.flac import FLAC, Picture
-from mutagen.id3 import ID3, TIT2, TPE1, TRCK, TALB, TDRC, TCON, TPE2, TPOS, APIC
+from mutagen.id3 import ID3, TIT2, TPE1, TRCK, TALB, TDRC, TCON, TPE2, TPOS, APIC, USLT
 
 from src.load_config import load_config
 from src.check_folder import check_folder
@@ -15,16 +15,33 @@ def download_music(song):
     album_name = song["album"]
     song_name = song["title"]
     album_name = song["album"]
+    lyric_name = song["title"] + ".lrc"
 
     expanded_path = os.path.expanduser(load_config("default", "download_path"))
     album_path = os.path.join(expanded_path, fix_folder(album_name))
     song_path = os.path.join(album_path, fix_name(song_name)) + "." + song["format"]
     flac_path = os.path.join(album_path, fix_name(song_name)) + ".flac"
+    lyric_path = os.path.join(album_path, fix_name(lyric_name))
 
     # 开始下载
     check_folder(album_path)
     print(f"开始下载：{song_name}.{song['format']}")
 
+    # 下载歌词
+    lyric_content = ""
+    if song["lyric"]:
+        try:
+            print(f"下载歌词：{song_name}")
+            lyric_file = requests.get(song["lyric"], timeout=10)
+            lyric_file.raise_for_status()
+            with open(lyric_path, "wb") as file:
+                file.write(lyric_file.content)
+            # 读取歌词内容，用于写入ID3标签
+            lyric_content = lyric_file.content.decode('utf-8')
+            print(f"歌词下载成功")
+        except Exception as e:
+            print(f"歌词下载失败：{e}")
+    
     # 显示进度条
     song_file = requests.get(song["source"], stream=True)
     file_size = int(song_file.headers.get('content-length', 0))
@@ -80,6 +97,11 @@ def download_music(song):
         mp3["TPOS"] = TPOS(encoding=3, text="1")
         mp3["TDRC"] = TDRC(encoding=3, text=song["publish"][:4])
         mp3["TCON"] = TCON(encoding=3, text="Arknights")
+        
+        # 写入歌词
+        if lyric_content:
+            mp3["USLT"] = USLT(encoding=3, lang='chi', desc='', text=lyric_content)
+            print(f"歌词已写入ID3标签")
 
         # 写入封面
         cover_data = best_cover(song)

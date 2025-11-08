@@ -37,6 +37,7 @@ def fetch_all_songs():
             "track": "",
             "publish": "",
             "instrumental": 0,
+            "lyric": "",
             # "download": ""
         })
 
@@ -127,6 +128,8 @@ def fetch_song_data(song_list):
             song_data = requests.get(url).json()
             song["source"] = song_data["data"]["sourceUrl"]
             song["format"] = os.path.splitext(song["source"])[1].replace(".", "")
+            # 安全获取歌词URL，如果不存在则为空字符串
+            song["lyric"] = song_data["data"].get("lyricUrl", "")
 
     # 创建线程
     threads = []
