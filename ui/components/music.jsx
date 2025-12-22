@@ -1,12 +1,11 @@
-import { Button } from "@/components/button"
 import { AlbumCover } from "@/components/cover"
-import { ArrowDownToLine, CheckLine } from "lucide-react"
+import { DropdownMenu } from "@/components/menu"
 
 export function MusicItem({ song, loading, isDownloading, onDownload, showCover }) {
   const isInstrumental = song.instrumental
 
   return (
-    <div className="relative flex gap-4 items-center h-fit p-4 pr-6 border backdrop-blur-2xs">
+    <div className="relative flex gap-4 items-center h-fit p-4 border backdrop-blur-2xs">
       {showCover && <AlbumCover song={song} className="size-20" />}
 
       {song.download && <div className="absolute top-0 right-0 border-t-10 border-l-10 border-t-lime-500 border-l-transparent" />}
@@ -22,9 +21,15 @@ export function MusicItem({ song, loading, isDownloading, onDownload, showCover 
         </div>
       </div>
 
-      <Button onClick={() => onDownload(song)} disabled={loading || isDownloading || song.download} className="w-11">
-        {song.download ? <CheckLine className="size-3.5 shrink-0" /> : <ArrowDownToLine className="size-3.5 shrink-0" /> }
-      </Button>
+      <DropdownMenu
+        items={[
+          {
+            label: song.download ? "重新下载歌曲" : "下载歌曲",
+            disabled: loading || isDownloading,
+            onClick: () => onDownload(song)
+          }
+        ]}
+      />
     </div>
   )
 }

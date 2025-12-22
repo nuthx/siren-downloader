@@ -14,7 +14,7 @@ export function Select({ options, value, onChange, className }) {
 
       <ListboxOptions
         anchor="bottom"
-        className="w-(--button-width) mt-1 border bg-background shadow-xl shadow-background overflow-y-auto transition data-closed:-translate-y-2 data-closed:opacity-0"
+        className="w-(--button-width) mt-1 border bg-background shadow-lg shadow-background overflow-y-auto transition data-closed:-translate-y-2 data-closed:opacity-0"
         transition
       >
         {options.map((item) => (
