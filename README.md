@@ -35,21 +35,7 @@ macOS 需要手动安装 [Homebrew](https://brew.sh) 并通过 `brew install ffm
 
 ## 常见问题
 
-#### 1. 网易云 API 失效
-
-网易云 API 仅影响更新歌曲列表功能，不影响歌曲下载与歌词获取
-
-若服务宕机，通常等待一段时间后重试即可恢复
-
-亦可自行更换为其他兼容的 NeteaseCloudMusicApi 接口
-
-#### 2. 无法下载 FFmpeg
-
-Windows 平台可从 [官网](https://ffmpeg.org/download.html) 手动下载 FFmpeg 二进制文件，重命名为 `ffmpeg.exe` 并复制到 `%APPDATA%\com.nuthx.siren-downloader\bin` 目录下
-
-macOS 平台亦可下载二进制文件，并配置到系统的环境变量中使用
-
-#### 3. macOS 运行提示“未打开”、“已损坏”、或“移到废纸篓”等弹窗
+#### 1. macOS 运行提示“未打开”、“已损坏”、或“移到废纸篓”等弹窗
 
 由于缺少签名，导致无法直接打开下载的应用程序，需手动移除应用的安全隔离属性
 
@@ -62,6 +48,34 @@ sudo xattr -dr com.apple.quarantine /Applications/siren-downloader.app
 若程序不在 `/Applications` 目录下，请将 `/Applications/siren-downloader.app` 替换为实际路径
 
 进入“系统设置” -> “隐私与安全性”，滑动至最底部，在 `已阻止 siren-downloader.app 以保护Mac` 中点击“仍要打开”
+
+#### 2. 无法下载 FFmpeg
+
+Windows 平台可从 [官网](https://ffmpeg.org/download.html) 手动下载 FFmpeg 二进制文件，重命名为 `ffmpeg.exe` 并复制到 `%APPDATA%\com.nuthx.siren-downloader\bin` 目录下
+
+macOS 平台亦可下载二进制文件，并配置到系统的环境变量中使用
+
+#### 3. 网易云 API 失效
+
+网易云 API 仅影响更新歌曲列表功能，不影响歌曲下载与歌词获取
+
+若服务宕机，通常等待一段时间后重试即可恢复
+
+亦可自行更换为其他兼容的 NeteaseCloudMusicApi 接口
+
+#### 4. 如何定义歌曲的“已下载”状态
+
+歌曲下载成功后，会写入“已下载”状态到配置目录中
+
+歌曲文件移动或删除时，不影响程序中显示的下载状态
+
+#### 5. 下载时报错“网易云封面为空”
+
+部分专辑在塞壬唱片官网与网易云音乐中的专辑名称不同，需要在在配置文件层面进行匹配
+
+最新版本已经同步匹配了所有有差异的专辑名称
+
+当有新的专辑发布且专辑名称不同时，则会报错“网易云封面为空”，更新软件至最新版本后即可解决
 
 ## 致谢
 
