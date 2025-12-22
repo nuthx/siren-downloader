@@ -10,6 +10,7 @@ export const useAppStore = create((set) => ({
   years: [], // 年份列表
   status: null, // 左下角的状态显示
   loading: false, // 是否正在手动刷新歌曲列表
+  isDownloading: false, // 是否有歌曲正在下载
 
   // 初始化应用数据
   initAppData: async () => {
@@ -69,7 +70,7 @@ export const useAppStore = create((set) => ({
 
   // 下载单首歌曲
   downloadSong: async (song) => {
-    set({ status: { type: "default", message: `下载中: ${song.title}` } })
+    set({ isDownloading: true, status: { type: "default", message: `下载中: ${song.title}` } })
     try {
       await invoke("download_music", { songId: song.id })
       set((state) => ({
@@ -78,6 +79,8 @@ export const useAppStore = create((set) => ({
       }))
     } catch (error) {
       set({ status: { type: "error", message: `下载失败: ${error}` } })
+    } finally {
+      set({ isDownloading: false })
     }
   },
 
@@ -94,7 +97,7 @@ export const useAppStore = create((set) => ({
       }
     })
 
-    set({ loading: true, status: { type: "default", message: "正在批量下载..." } })
+    set({ isDownloading: true, loading: true, status: { type: "default", message: "正在批量下载..." } })
     try {
       const [successCount, failCount] = await invoke("download_all_music")
       if (successCount === 0 && failCount === 0) {
@@ -108,7 +111,7 @@ export const useAppStore = create((set) => ({
       set({ status: { type: "error", message: `下载失败: ${error}` } })
     } finally {
       unlisten()
-      set({ loading: false })
+      set({ isDownloading: false, loading: false })
     }
   }
 }))

@@ -2,7 +2,7 @@ import { Button } from "@/components/button"
 import { AlbumCover } from "@/components/cover"
 import { ArrowDownToLine, CheckLine } from "lucide-react"
 
-export function MusicItem({ song, loading, onDownload, showCover }) {
+export function MusicItem({ song, loading, isDownloading, onDownload, showCover }) {
   const isInstrumental = song.instrumental
 
   return (
@@ -20,7 +20,7 @@ export function MusicItem({ song, loading, onDownload, showCover }) {
         </div>
       </div>
 
-      <Button onClick={() => onDownload(song)} disabled={loading || song.download} className="w-11">
+      <Button onClick={() => onDownload(song)} disabled={loading || isDownloading || song.download} className="w-11">
         {song.download ? <CheckLine className="size-3.5 shrink-0" /> : <ArrowDownToLine className="size-3.5 shrink-0" /> }
       </Button>
     </div>
