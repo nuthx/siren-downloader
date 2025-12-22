@@ -1,8 +1,6 @@
-use crate::config::load_app_config;
 use anyhow::{anyhow, Context, Result};
 use reqwest::{get, Client};
 use serde_json::Value;
-use tauri::AppHandle;
 
 // 获取 Github 上的最新版本号
 pub async fn fetch_latest_version() -> Result<String> {
@@ -76,21 +74,23 @@ pub async fn fetch_song_detail(song_id: &str) -> Result<Value> {
     Ok(data)
 }
 
+
 // 从网易云获取专辑列表
-pub async fn fetch_ncm_albums(app: &AppHandle) -> Result<Vec<Value>> {
-    let config = load_app_config(app).await?;
-    let response = get(&format!(
-        "{}/artist/album?id=32540734&limit=1000",
-        config.ncm_api
-    ))
-    .await?
-    .json::<Value>()
-    .await?;
+pub async fn fetch_ncm_albums() -> Result<Vec<Value>> {
+    let client = Client::new();
+    let response = client
+        .get("https://music.163.com/api/artist/albums/32540734?offset=0&limit=1000")
+        .header("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36")
+        .header("Referer", "https://music.163.com/")
+        .send()
+        .await?
+        .json::<Value>()
+        .await?;
 
     let albums = response["hotAlbums"]
         .as_array()
         .cloned()
-        .ok_or_else(|| anyhow!("网易云API已失效，请检查链接"))?;
+        .ok_or_else(|| anyhow!("网易云 API 请求失败"))?;
 
     println!("[API] 网易云发现 {} 张专辑", albums.len());
     Ok(albums)

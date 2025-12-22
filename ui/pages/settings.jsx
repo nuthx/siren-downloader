@@ -133,10 +133,6 @@ export function SettingsPage() {
             </Button>
           </SettingsItem>
 
-          <SettingsItem title="网易云 API" desc="用于获取歌曲文件的高清封面与元数据">
-            <Input value={config.ncm_api} onInput={(e) => handleChange("ncm_api", e.target.value)} placeholder="请输入网易云 API 地址" />
-          </SettingsItem>
-
           <SettingsItem title="下载路径" desc="指定歌曲文件的下载路径">
             <Input value={config.download_path} onInput={(e) => handleChange("download_path", e.target.value)} placeholder="请选择下载路径" />
             <Button type="button" onClick={handleSelectFolder} className="border-l-0 border-border hover:border-border">选择文件夹</Button>
