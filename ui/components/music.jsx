@@ -6,8 +6,10 @@ export function MusicItem({ song, loading, isDownloading, onDownload, showCover 
   const isInstrumental = song.instrumental
 
   return (
-    <div className="flex gap-4 items-center h-fit p-4 pr-6 border backdrop-blur-2xs">
+    <div className="relative flex gap-4 items-center h-fit p-4 pr-6 border backdrop-blur-2xs">
       {showCover && <AlbumCover song={song} className="size-20" />}
+
+      {song.download && <div className="absolute top-0 right-0 border-t-10 border-l-10 border-t-lime-500 border-l-transparent" />}
 
       <div className="flex-1 flex flex-col gap-1 min-w-0">
         <h5 className="text-base font-semibold">{song.title}</h5>

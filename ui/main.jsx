@@ -16,7 +16,7 @@ useAppStore.getState().initAppData()
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-    <HashRouter className="container mx-auto bg-red-50">
+    <HashRouter>
       <AppWindow>
         <Nav>
           <NavButton path="/" title="首页" />
