@@ -2,6 +2,7 @@ use anyhow::{bail, Context, Result};
 use reqwest::get;
 use std::fs::{create_dir_all, remove_file, rename, File};
 use std::io::{copy, Write};
+use std::path::Path;
 use tauri::{AppHandle, Manager};
 use tauri_plugin_shell::ShellExt;
 
@@ -13,8 +14,16 @@ pub fn get_ffmpeg_path(app: &AppHandle) -> Result<String> {
         if ffmpeg_path.exists() {
             Ok(ffmpeg_path.to_string_lossy().to_string())
         } else {
-            bail!("请先在设置中下载 FFmpeg")
+            bail!("请先下载 FFmpeg")
         }
+    } else if cfg!(target_os = "macos") {
+        let paths = ["/opt/homebrew/bin/ffmpeg", "/usr/local/bin/ffmpeg"];
+        for p in paths {
+            if Path::new(p).exists() {
+                return Ok(p.to_string());
+            }
+        }
+        bail!("请先通过 Homebrew 安装 FFmpeg: brew install ffmpeg");
     } else {
         Ok("ffmpeg".to_string())
     }

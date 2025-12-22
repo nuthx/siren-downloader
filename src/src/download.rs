@@ -74,7 +74,8 @@ pub async fn download_music(app: &AppHandle, song_id: &str) -> Result<()> {
 
     // 分辨率大于 1500 则缩小，保存到当前封面目录
     let cover_data = if width > 1500 || height > 1500 {
-        let resized_cover_path = cover_path.with_file_name(format!("{}_resized.jpg", song.album_id));
+        let resized_cover_path =
+            cover_path.with_file_name(format!("{}_resized.jpg", song.album_id));
         let output = app
             .shell()
             .command(&ffmpeg_path)
@@ -96,15 +97,15 @@ pub async fn download_music(app: &AppHandle, song_id: &str) -> Result<()> {
         if !output.status.success() {
             bail!("封面缩放失败: {}", String::from_utf8_lossy(&output.stderr));
         }
-        
+
         // 读取缩放后的文件数据
         let data = async_fs::read(&resized_cover_path)
             .await
             .context("读取缩放封面数据失败")?;
-        
+
         // 删除缩放后的文件
         let _ = remove_file(&resized_cover_path);
-        
+
         data
     } else {
         async_fs::read(&cover_path)
