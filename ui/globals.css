@@ -1,0 +1,30 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #D4D8DD;
+  --color-secondary: #7E8186;
+  --color-muted: #565859;
+
+  --color-border: #424446;
+  --color-background: #111214;
+
+  --blur-2xs: 2px;
+}
+
+@layer base {
+  * {
+    @apply m-0 p-0 border-border box-border focus:outline-none;
+  }
+
+  body {
+    @apply h-screen font-sans text-sm text-primary antialiased select-none overflow-hidden;
+  }
+
+  h1, h2, h3, h4, h5, h6, span, p {
+    @apply cursor-default;
+  }
+
+  .flex-center {
+    @apply flex items-center justify-center;
+  }
+}
