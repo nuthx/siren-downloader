@@ -45,6 +45,9 @@ export default defineConfig([
       "@stylistic/jsx-quotes": ["error", "prefer-double"],
       "@stylistic/multiline-ternary": ["error", "always-multiline"],
       "@stylistic/quotes": ["error", "double"]
+    },
+    settings: {
+      react: { version: "detect" }
     }
   }
 ])
