@@ -4,6 +4,7 @@ use crate::cover::get_cover_path;
 use crate::ffmpeg::get_ffmpeg_path;
 use crate::utils::{fix_filename, fix_folder_name};
 use anyhow::{bail, Context, Result};
+use futures::StreamExt;
 use id3::frame::{Frame, Picture, PictureType};
 use id3::{Tag, TagLike, Version};
 use image::ImageReader;
@@ -18,6 +19,7 @@ use std::path::{Path, PathBuf};
 use tauri::{AppHandle, Emitter};
 use tauri_plugin_shell::ShellExt;
 use tokio::fs as async_fs;
+use tokio::io::AsyncWriteExt;
 
 // 下载单首歌曲
 pub async fn download_music(app: &AppHandle, song_id: &str) -> Result<()> {
@@ -118,18 +120,40 @@ pub async fn download_music(app: &AppHandle, song_id: &str) -> Result<()> {
     create_dir_all(&folder_path).context("无法创建下载目录")?;
     let base_path = folder_path.join(fix_filename(&song.title));
 
-    // 下载歌曲并保存
+    // 先创建空的歌曲文件
     println!("[Download] 开始下载歌曲: {}", song.title);
-    write(
-        base_path.with_extension(&format),
-        get(source_url)
-            .await
-            .context("下载歌曲文件失败")?
-            .bytes()
-            .await
-            .context("解析歌曲字节失败")?,
-    )
-    .context("保存歌曲文件失败")?;
+    let response = get(source_url).await.context("下载歌曲文件失败")?;
+    let total_size = response.content_length().unwrap_or(0);
+    let file_path = base_path.with_extension(&format);
+    let mut file = async_fs::File::create(&file_path)
+        .await
+        .context("创建歌曲文件失败")?;
+
+    // 分块写入歌曲数据
+    let mut downloaded: u64 = 0;
+    let mut last_progress: u32 = 0;
+    let mut stream = response.bytes_stream();
+    while let Some(chunk) = stream.next().await {
+        let chunk = chunk.context("下载数据块失败")?;
+        file.write_all(&chunk).await.context("写入文件失败")?;
+        downloaded += chunk.len() as u64;
+
+        if total_size > 0 {
+            let progress = (downloaded * 100 / total_size) as u32;
+            if progress >= last_progress + 2 || progress == 100 {
+                last_progress = progress;
+                let _ = app.emit(
+                    "download-single-progress",
+                    json!({
+                        "song_id": song_id,
+                        "progress": progress
+                    }),
+                );
+            }
+        }
+    }
+
+    file.flush().await.context("刷新文件缓冲失败")?;
 
     // 如果开启歌词下载，且存在歌词链接，则下载并保存为 LRC 文件
     if config.download_lyrics && !lyric_url.is_empty() {
