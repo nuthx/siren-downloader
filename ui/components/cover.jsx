@@ -6,8 +6,14 @@ import { ImageOff, LoaderCircle } from "lucide-react"
 const coverCache = new Map()
 
 export function AlbumCover({ song, className }) {
-  const [src, setSrc] = useState(() => coverCache.get(song?.album_id) || null)
+  const [src, setSrc] = useState(null)
   const [error, setError] = useState(false)
+
+  // 获取封面地址
+  useEffect(() => {
+    setSrc(coverCache.get(song?.album_id) || null)
+    setError(false)
+  }, [song?.album_id])
 
   useEffect(() => {
     if (!song?.album_id || !song?.cover_ncm || src || error) return
