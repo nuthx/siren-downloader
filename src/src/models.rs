@@ -4,7 +4,6 @@ use serde_json::Value;
 // 应用配置
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct AppConfig {
-    pub ncm_api: String,
     pub download_path: String,
     pub download_instrumental: bool,
     pub download_lyrics: bool,

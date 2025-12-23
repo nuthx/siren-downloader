@@ -1,7 +1,6 @@
 import { load } from "@tauri-apps/plugin-store"
 
 export const DEFAULT_CONFIG = {
-  ncm_api: "https://netease-api-five.vercel.app",
   download_path: "",
   download_instrumental: false,
   download_lyrics: false,
