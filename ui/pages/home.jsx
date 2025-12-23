@@ -63,8 +63,8 @@ export function HomePage() {
 
       <VirtuosoGrid
         totalCount={filteredSongs.length}
-        listClassName="grid grid-cols-[repeat(auto-fit,minmax(460px,1fr))] gap-2 my-2 pl-10 pr-6.25" // 右侧多出 1 像素空间
-        style={{ overflow: "auto", scrollbarGutter: "stable" }}
+        listClassName="grid grid-cols-[repeat(auto-fit,minmax(460px,1fr))] gap-2 my-2 pl-10 pr-8"
+        style={{ overflowY: "scroll" }}
         itemContent={(index) => (
           <MusicItem
             song={filteredSongs[index]}
