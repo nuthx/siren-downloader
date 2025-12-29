@@ -1,5 +1,5 @@
 import packageJson from "#/package.json"
-import { Link } from "react-router-dom"
+import { openUrl } from "@tauri-apps/plugin-opener"
 
 export function AboutPage() {
   return (
@@ -10,9 +10,9 @@ export function AboutPage() {
         <span className="text-secondary pt-1">版本 {packageJson.version}</span>
       </div>
 
-      <Link to="https://github.com/nuthx/siren-downloader" className="hover:text-secondary transition">
-        <img src="/logo/github.svg" alt="logo" className="size-6 hover:opacity-70 transition drag" draggable="false" />
-      </Link>
+      <button onClick={() => openUrl("https://github.com/nuthx/siren-downloader")}>
+        <img src="/logo/github.svg" alt="logo" className="size-6 hover:opacity-70 cursor-pointer transition" draggable="false" />
+      </button>
 
       <div className="flex-center flex-col gap-1 text-xs text-secondary text-center">
         <p>本工具仅用于学习与技术交流，所有音乐版权均归原作者及相关版权方所有，任何下载内容不得用于商业用途</p>
