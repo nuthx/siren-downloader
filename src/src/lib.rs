@@ -3,6 +3,7 @@ mod config;
 mod cover;
 mod download;
 mod ffmpeg;
+mod menu;
 mod models;
 mod refresh;
 mod utils;
@@ -103,6 +104,14 @@ pub fn run() {
         .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_shell::init())
+        .setup(|app| {
+            #[cfg(target_os = "macos")]
+            {
+                let menu = menu::create_menu(app)?;
+                app.set_menu(menu)?;
+            }
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             load_latest_version,
             load_remote_music,

@@ -74,13 +74,15 @@ pub async fn fetch_song_detail(song_id: &str) -> Result<Value> {
     Ok(data)
 }
 
-
 // 从网易云获取专辑列表
 pub async fn fetch_ncm_albums() -> Result<Vec<Value>> {
     let client = Client::new();
     let response = client
         .get("https://music.163.com/api/artist/albums/32540734?offset=0&limit=1000")
-        .header("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36")
+        .header(
+            "User-Agent",
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
+        )
         .header("Referer", "https://music.163.com/")
         .send()
         .await?
