@@ -9,7 +9,7 @@ import { Tab } from "@/components/tab"
 import { MusicItem } from "@/components/music"
 
 export function HomePage() {
-  const { hasUpdate, songList, years, status, loading, isDownloading, refreshSongList, downloadSong, downloadAllSongs } = useAppStore()
+  const { hasUpdate, songList, years, status, loading, isDownloading, refreshSongList, downloadAllSongs } = useAppStore()
   const [selectedYear, setSelectedYear] = useState("all")
   const [selectedFilter, setSelectedFilter] = useState("all")
   const [showCover, setShowCover] = useState(true)
@@ -19,14 +19,27 @@ export function HomePage() {
     getConfig().then((config) => setShowCover(config.show_cover))
   }, [])
 
-  // 缓存过滤和反转后的歌曲列表
+  // 缓存过滤后的歌曲列表
   const filteredSongs = useMemo(() => {
-    const matchYear = (publish) => selectedYear === "all" || publish?.startsWith(selectedYear)
-    const matchDownload = (download) =>
-      selectedFilter === "all"
-      || (selectedFilter === "pending" && !download)
-      || (selectedFilter === "downloaded" && download)
-    return (songList || []).filter(({ publish, download }) => matchYear(publish) && matchDownload(download)).reverse()
+    const albumMap = (songList || []).reduce((map, song) => {
+      const { publish, download, album_id = "" } = song
+
+      if (
+        (selectedYear !== "all" && !publish?.startsWith(selectedYear))
+        || (selectedFilter === "pending" && download)
+        || (selectedFilter === "downloaded" && !download)
+      ) {
+        return map
+      }
+
+      const list = map.get(album_id) || []
+      list.push(song)
+      map.set(album_id, list)
+      return map
+    }, new Map())
+
+    // 专辑层面倒序显示，歌曲顺序保持正序不变
+    return [...albumMap.values()].reverse().flat()
   }, [songList, selectedYear, selectedFilter])
 
   if (!songList) {
@@ -68,9 +81,6 @@ export function HomePage() {
         itemContent={(index) => (
           <MusicItem
             song={filteredSongs[index]}
-            loading={loading}
-            isDownloading={isDownloading}
-            onDownload={downloadSong}
             showCover={showCover}
           />
         )}

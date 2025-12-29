@@ -1,7 +1,8 @@
 import "@/globals.css"
-import React from "react"
-import ReactDOM from "react-dom/client"
+import { StrictMode } from "react"
+import { createRoot } from "react-dom/client"
 import { HashRouter, Routes, Route } from "react-router-dom"
+import { listen } from "@tauri-apps/api/event"
 import { initConfig } from "@/utils/config"
 import { useAppStore } from "@/utils/store"
 import { AppWindow, MainContent } from "@/components/window"
@@ -14,8 +15,20 @@ import { AboutPage } from "@/pages/about"
 initConfig().catch(console.error)
 useAppStore.getState().initAppData()
 
-ReactDOM.createRoot(document.getElementById("root")).render(
-  <React.StrictMode>
+// 监听菜单跳转
+listen("navigate", (event) => {
+  window.location.hash = event.payload
+})
+
+// 监听菜单功能
+listen("menu-action", (event) => {
+  const { refreshSongList, downloadAllSongs } = useAppStore.getState()
+  if (event.payload === "refresh") refreshSongList()
+  else if (event.payload === "download_all") downloadAllSongs()
+})
+
+createRoot(document.getElementById("root")).render(
+  <StrictMode>
     <HashRouter>
       <AppWindow>
         <Nav>
@@ -32,5 +45,5 @@ ReactDOM.createRoot(document.getElementById("root")).render(
         </MainContent>
       </AppWindow>
     </HashRouter>
-  </React.StrictMode>
+  </StrictMode>
 )

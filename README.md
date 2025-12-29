@@ -39,15 +39,15 @@ macOS 需要手动安装 [Homebrew](https://brew.sh) 并通过 `brew install ffm
 
 由于缺少签名，导致无法直接打开下载的应用程序，需手动移除应用的安全隔离属性
 
-打开终端，输入以下命令：
+将 `塞壬唱片下载器` 拖入到 `Application` 文件夹后，打开终端，输入以下命令：
 
 ```bash
-sudo xattr -dr com.apple.quarantine /Applications/siren-downloader.app
+sudo xattr -dr com.apple.quarantine /Applications/塞壬唱片下载器.app
 ```
 
-若程序不在 `/Applications` 目录下，请将 `/Applications/siren-downloader.app` 替换为实际路径
+若程序不在 `/Applications` 目录下，请将 `/Applications/塞壬唱片下载器.app` 替换为实际路径
 
-进入“系统设置” -> “隐私与安全性”，滑动至最底部，在 `已阻止 siren-downloader.app 以保护Mac` 中点击“仍要打开”
+进入“系统设置” -> “隐私与安全性”，滑动至最底部，在 `已阻止 塞壬唱片下载器 以保护Mac` 中点击“仍要打开”
 
 #### 2. 无法下载 FFmpeg
 

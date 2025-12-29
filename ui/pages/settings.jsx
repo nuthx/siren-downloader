@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react"
 import { appDataDir } from "@tauri-apps/api/path"
 import { invoke } from "@tauri-apps/api/core"
+import { platform } from "@tauri-apps/plugin-os"
 import { open } from "@tauri-apps/plugin-dialog"
 import { openPath } from "@tauri-apps/plugin-opener"
-import { DEFAULT_CONFIG, getConfig, saveConfig } from "@/utils/config"
+import { getConfig, saveConfig, resetConfig } from "@/utils/config"
 import { cn } from "@/utils/cn"
 import { Button } from "@/components/button"
 import { Input } from "@/components/input"
@@ -13,18 +14,12 @@ import { SettingsItem } from "@/components/settings"
 export function SettingsPage() {
   const [config, setConfig] = useState(null)
   const [status, setStatus] = useState(null)
-  const [isWindows, setIsWindows] = useState(false)
   const [isDownloading, setIsDownloading] = useState(false)
 
+  // 加载配置
   useEffect(() => {
-    // 加载配置
     getConfig().then(setConfig).catch((error) => {
       setStatus({ type: "error", message: `配置加载失败: ${error}` })
-    })
-
-    // 检测操作系统
-    invoke("get_platform").then((platform) => {
-      setIsWindows(platform === "windows")
     })
   }, [])
 
@@ -92,9 +87,14 @@ export function SettingsPage() {
   }
 
   // 重置配置
-  const handleReset = () => {
-    setConfig({ ...DEFAULT_CONFIG })
-    setStatus({ type: "warning", message: "已重置为默认配置，需要点击保存后才可生效" })
+  const handleReset = async () => {
+    try {
+      await resetConfig()
+      setConfig(await getConfig())
+      setStatus({ type: "warning", message: "已重置为默认配置，需要点击保存后才可生效" })
+    } catch (error) {
+      setStatus({ type: "error", message: `重置失败: ${error}` })
+    }
   }
 
   // 保存配置
@@ -103,7 +103,6 @@ export function SettingsPage() {
     try {
       await saveConfig(config)
       setStatus({ type: "default", message: "配置已保存" })
-      setTimeout(() => setStatus(null), 5000)
     } catch (error) {
       setStatus({ type: "error", message: `保存失败: ${error}` })
     }
@@ -117,8 +116,8 @@ export function SettingsPage() {
     <form onSubmit={handleSubmit} className="flex flex-col h-full overflow-hidden">
       <div className="flex-1 p-8 pl-10 overflow-y-scroll">
         <div className="flex flex-col gap-8 max-w-150 mx-auto">
-          <SettingsItem title="FFmpeg 管理" desc="转换音频格式并缩放封面图片" className="gap-2">
-            {isWindows && (
+          <SettingsItem title="FFmpeg 管理" desc="用于转换音频格式和压缩封面图片，使用前请确保已正确安装" className="gap-2">
+            {platform() === "windows" && (
               <>
                 <Button type="button" onClick={handleDownloadFFmpeg} disabled={isDownloading} className="border-border hover:border-border">
                   下载 FFmpeg
@@ -133,12 +132,12 @@ export function SettingsPage() {
             </Button>
           </SettingsItem>
 
-          <SettingsItem title="下载路径" desc="指定歌曲文件的下载路径">
+          <SettingsItem title="存储位置" desc="歌曲将保存至该目录下的「明日方舟」文件夹中">
             <Input value={config.download_path} onInput={(e) => handleChange("download_path", e.target.value)} placeholder="请选择下载路径" />
             <Button type="button" onClick={handleSelectFolder} className="border-l-0 border-border hover:border-border">选择文件夹</Button>
           </SettingsItem>
 
-          <SettingsItem title="下载伴奏" desc="是否下载标题包含 Instrumental 的歌曲">
+          <SettingsItem title="下载伴奏" desc="是否同时下载标题含 Instrumental 的伴奏版本">
             <Select
               options={[
                 { value: false, label: "不下载伴奏" },
@@ -149,7 +148,7 @@ export function SettingsPage() {
             />
           </SettingsItem>
 
-          <SettingsItem title="下载歌词" desc="是否从官网同步下载歌词文件">
+          <SettingsItem title="下载歌词" desc="是否从官网同步获取并下载 LRC 歌词">
             <Select
               options={[
                 { value: false, label: "不下载歌词" },
@@ -160,7 +159,31 @@ export function SettingsPage() {
             />
           </SettingsItem>
 
-          <SettingsItem title="显示封面" desc="是否在首页显示专辑封面，开启后可能会导致程序卡顿">
+          <SettingsItem title="日期元数据" desc="选择写入音频 ID3 元数据时使用的日期格式">
+            <Select
+              options={[
+                { value: "year", label: "仅年份：2025" },
+                { value: "full", label: "完整日期：2025-09-05" }
+              ]}
+              value={config.id3_date_format}
+              onChange={(value) => handleChange("id3_date_format", value)}
+            />
+          </SettingsItem>
+
+          <SettingsItem title="自定义专辑名" desc="是否在保存的专辑文件夹名称前，添加日期前缀">
+            <Select
+              options={[
+                { value: "none", label: "仅专辑名：焰烬曙明" },
+                { value: "year", label: "年份前缀：[2025] 焰烬曙明" },
+                { value: "lite", label: "简单日期前缀：[250905] 焰烬曙明" },
+                { value: "full", label: "完整日期前缀：[2025-09-05] 焰烬曙明" }
+              ]}
+              value={config.custom_album}
+              onChange={(value) => handleChange("custom_album", value)}
+            />
+          </SettingsItem>
+
+          <SettingsItem title="显示专辑封面" desc="在首页列表中显示封面图片，此选项开启时可能会影响性能">
             <Select
               options={[
                 { value: true, label: "显示封面" },

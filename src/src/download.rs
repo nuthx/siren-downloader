@@ -115,8 +115,29 @@ pub async fn download_music(app: &AppHandle, song_id: &str) -> Result<()> {
             .context("读取封面数据失败")?
     };
 
+    // 根据配置格式化专辑文件夹名称
+    let album_folder = match config.custom_album.as_str() {
+        "year" => {
+            let year = song.publish.get(..4).unwrap_or("");
+            format!("[{}] {}", year, song.album_title)
+        }
+        "lite" => {
+            let yy = song.publish.get(2..4).unwrap_or("");
+            let mm = song.publish.get(5..7).unwrap_or("");
+            let dd = song.publish.get(8..10).unwrap_or("");
+            format!("[{}{}{}] {}", yy, mm, dd, song.album_title)
+        }
+        "full" => {
+            let date = song.publish.get(..10).unwrap_or("");
+            format!("[{}] {}", date, song.album_title)
+        }
+        _ => song.album_title.clone(),
+    };
+
     // 构建文件路径
-    let folder_path = PathBuf::from(&config.download_path).join(fix_folder_name(&song.album_title));
+    let folder_path = PathBuf::from(&config.download_path)
+        .join("明日方舟")
+        .join(fix_folder_name(&album_folder));
     create_dir_all(&folder_path).context("无法创建下载目录")?;
     let base_path = folder_path.join(fix_filename(&song.title));
 
@@ -209,6 +230,10 @@ pub async fn download_music(app: &AppHandle, song_id: &str) -> Result<()> {
     // 写入元数据
     println!("[Download] 写入歌曲元数据: {}", song.title);
     let song_path = base_path.with_extension(&format);
+    let publish_date = match config.id3_date_format.as_str() {
+        "full" => &song.publish,
+        _ => &song.publish[..song.publish.len().min(4)],
+    };
     if format == "mp3" {
         let mut tag = Tag::new();
         tag.set_title(&song.title);
@@ -217,7 +242,7 @@ pub async fn download_music(app: &AppHandle, song_id: &str) -> Result<()> {
         tag.set_album_artist("塞壬唱片-MSR");
         tag.set_disc(1);
         tag.set_track(song.track as u32);
-        tag.add_frame(Frame::text("TDRC", song.publish.get(..4).unwrap_or("")));
+        tag.add_frame(Frame::text("TDRC", publish_date));
         tag.set_genre("Arknights");
         tag.add_frame(Picture {
             mime_type: "image/jpeg".to_string(),
@@ -236,7 +261,7 @@ pub async fn download_music(app: &AppHandle, song_id: &str) -> Result<()> {
         comments.set_album_artist(vec!["塞壬唱片-MSR".to_string()]);
         comments.set("DISCNUMBER", vec!["1"]);
         comments.set_track(song.track as u32);
-        comments.set("DATE", vec![song.publish.get(..4).unwrap_or("")]);
+        comments.set("DATE", vec![publish_date]);
         comments.set_genre(vec!["Arknights".to_string()]);
         tag.add_picture("image/jpeg", FlacPictureType::CoverFront, cover_data);
         tag.write_to_path(&song_path)

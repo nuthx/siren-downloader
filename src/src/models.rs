@@ -7,6 +7,8 @@ pub struct AppConfig {
     pub download_path: String,
     pub download_instrumental: bool,
     pub download_lyrics: bool,
+    pub id3_date_format: String,
+    pub custom_album: String,
     pub show_cover: bool,
 }
 

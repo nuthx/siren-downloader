@@ -3,18 +3,13 @@ mod config;
 mod cover;
 mod download;
 mod ffmpeg;
+mod menu;
 mod models;
 mod refresh;
 mod utils;
 
 use models::SongDetail;
 use serde_json::Value;
-
-// 获取平台名称
-#[tauri::command]
-fn get_platform() -> String {
-    std::env::consts::OS.to_string()
-}
 
 // 检查更新
 #[tauri::command]
@@ -96,6 +91,27 @@ async fn download_all_music(app: tauri::AppHandle) -> Result<(usize, usize), Str
         .map_err(|e| e.to_string())
 }
 
+// 更新歌曲下载状态
+#[tauri::command]
+async fn set_download_status(
+    app: tauri::AppHandle,
+    song_id: String,
+    downloaded: bool,
+) -> Result<(), String> {
+    let mut songs = config::load_music_data(&app)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    if let Some(song) = songs.iter_mut().find(|s| s.id == song_id) {
+        song.download = downloaded;
+        config::save_music_data(&app, &songs)
+            .await
+            .map_err(|e| e.to_string())?;
+    }
+
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -103,6 +119,15 @@ pub fn run() {
         .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_shell::init())
+        .plugin(tauri_plugin_os::init())
+        .setup(|app| {
+            #[cfg(target_os = "macos")]
+            {
+                let menu = menu::create_menu(app)?;
+                app.set_menu(menu)?;
+            }
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             load_latest_version,
             load_remote_music,
@@ -111,8 +136,8 @@ pub fn run() {
             get_cover,
             download_music,
             download_all_music,
+            set_download_status,
             get_ffmpeg_version,
-            get_platform,
             download_ffmpeg,
             delete_ffmpeg,
         ])

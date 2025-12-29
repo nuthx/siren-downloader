@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "siren-downloader",
+  "productName": "塞壬唱片下载器",
   "version": "../package.json",
   "identifier": "com.nuthx.siren-downloader",
   "build": {
@@ -36,6 +36,7 @@
             "store:default",
             "dialog:default",
             "shell:allow-execute",
+            "os:default",
             {
               "identifier": "opener:allow-open-path",
               "allow": [{ "path": "$APPDATA" }]

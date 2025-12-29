@@ -1,13 +1,15 @@
 import { load } from "@tauri-apps/plugin-store"
 
-export const DEFAULT_CONFIG = {
+const DEFAULT_CONFIG = {
   download_path: "",
   download_instrumental: false,
   download_lyrics: false,
+  id3_date_format: "year",
+  custom_album: "none",
   show_cover: true
 }
 
-export const SYSTEM_ALBUM_MATCH = {
+const SYSTEM_ALBUM_MATCH = {
   "Operation Barrenland": "Operation Barrenland (W&W Soundtrack Mix)",
   "危机合约黄铁·利刃·燃灰OST": "危机合约 黄铁·利刃·燃灰OST",
   "Operation Pine Soot": "危机合约松烟行动OST",
@@ -22,28 +24,32 @@ export const SYSTEM_ALBUM_MATCH = {
 
 let storeInstance = null
 
-async function getConfigStore() {
+async function getStore() {
   if (!storeInstance) {
-    storeInstance = await load("config.json", { autoSave: false })
+    storeInstance = await load("config.json", { autoSave: true })
   }
   return storeInstance
 }
 
 export async function initConfig() {
-  const store = await getConfigStore()
-  await store.set("app_config", (await store.get("app_config")) || DEFAULT_CONFIG)
+  const store = await getStore()
+  const existingConfig = await store.get("app_config")
+  await store.set("app_config", { ...DEFAULT_CONFIG, ...existingConfig })
   await store.set("album_match", SYSTEM_ALBUM_MATCH)
-  await store.save()
 }
 
 export async function getConfig() {
-  const store = await getConfigStore()
+  const store = await getStore()
   const config = await store.get("app_config")
-  return config || DEFAULT_CONFIG
+  return { ...DEFAULT_CONFIG, ...config }
 }
 
 export async function saveConfig(config) {
-  const store = await getConfigStore()
+  const store = await getStore()
   await store.set("app_config", config)
-  await store.save()
+}
+
+export async function resetConfig() {
+  const store = await getStore()
+  await store.set("app_config", DEFAULT_CONFIG)
 }
