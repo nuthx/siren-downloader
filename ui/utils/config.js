@@ -4,6 +4,7 @@ const DEFAULT_CONFIG = {
   download_path: "",
   download_instrumental: false,
   download_lyrics: false,
+  custom_album: "none",
   show_cover: true
 }
 

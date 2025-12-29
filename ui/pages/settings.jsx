@@ -159,6 +159,19 @@ export function SettingsPage() {
             />
           </SettingsItem>
 
+          <SettingsItem title="自定义专辑文件夹" desc="下载歌曲时，是否在专辑文件夹上显示年份">
+            <Select
+              options={[
+                { value: "none", label: "仅显示专辑名，如 焰烬曙明" },
+                { value: "year", label: "显示年份，如 [2025] 焰烬曙明" },
+                { value: "lite", label: "显示简单日期，如 [250905] 焰烬曙明" },
+                { value: "full", label: "显示完整日期，如 [2025-09-05] 焰烬曙明" }
+              ]}
+              value={config.custom_album}
+              onChange={(value) => handleChange("custom_album", value)}
+            />
+          </SettingsItem>
+
           <SettingsItem title="显示封面" desc="是否在首页显示专辑封面，开启后可能会导致程序卡顿">
             <Select
               options={[
