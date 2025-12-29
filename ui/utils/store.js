@@ -68,15 +68,21 @@ export const useAppStore = create((set) => ({
     }
   },
 
+  // 在前端更新歌曲下载状态（仅前端）
+  updateSongStatus: (songId, downloaded) => {
+    set((state) => ({
+      songList: state.songList.map((s) => s.id === songId ? { ...s, download: downloaded } : s)
+    }))
+  },
+
   // 下载单首歌曲
   downloadSong: async (song) => {
+    const { updateSongStatus } = useAppStore.getState()
     set({ isDownloading: true, status: { type: "default", message: `下载中: ${song.title}` } })
     try {
       await invoke("download_music", { songId: song.id })
-      set((state) => ({
-        songList: state.songList.map((s) => s.id === song.id ? { ...s, download: true } : s), // 前端更新为已下载
-        status: { type: "default", message: `下载完成: ${song.title}` }
-      }))
+      updateSongStatus(song.id, true)
+      set({ status: { type: "default", message: `下载完成: ${song.title}` } })
     } catch (error) {
       set({ status: { type: "error", message: `下载失败: ${error}` } })
     } finally {
@@ -86,14 +92,13 @@ export const useAppStore = create((set) => ({
 
   // 下载所有歌曲
   downloadAllSongs: async () => {
+    const { updateSongStatus } = useAppStore.getState()
     // 监听下载进度
     const unlisten = await listen("download-progress", (event) => {
       const { current, total, song_id, song_title, success } = event.payload
       set({ status: { type: "default", message: `下载中 (${current}/${total}): ${song_title}` } })
       if (success) {
-        set((state) => ({
-          songList: state.songList.map((s) => s.id === song_id ? { ...s, download: true } : s) // 前端更新为已下载
-        }))
+        updateSongStatus(song_id, true)
       }
     })
 

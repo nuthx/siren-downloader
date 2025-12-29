@@ -1,9 +1,12 @@
 import { listen } from "@tauri-apps/api/event"
+import { invoke } from "@tauri-apps/api/core"
 import { useState, useEffect } from "react"
+import { useAppStore } from "@/utils/store"
 import { AlbumCover } from "@/components/cover"
 import { DropdownMenu } from "@/components/menu"
 
-export function MusicItem({ song, loading, isDownloading, onDownload, showCover }) {
+export function MusicItem({ song, showCover }) {
+  const { loading, isDownloading, downloadSong, updateSongStatus } = useAppStore()
   const isInstrumental = song.instrumental
   const [downloadProgress, setDownloadProgress] = useState(null)
 
@@ -26,6 +29,11 @@ export function MusicItem({ song, loading, isDownloading, onDownload, showCover 
       unlisten.then((fn) => fn())
     }
   }, [song.id])
+
+  const handleSetDownloadStatus = async (downloaded) => {
+    await invoke("set_download_status", { songId: song.id, downloaded })
+    updateSongStatus(song.id, downloaded)
+  }
 
   return (
     <div className="relative flex gap-4 items-center h-fit p-4 border backdrop-blur-2xs">
@@ -56,7 +64,11 @@ export function MusicItem({ song, loading, isDownloading, onDownload, showCover 
           {
             label: song.download ? "重新下载歌曲" : "下载歌曲",
             disabled: loading || isDownloading,
-            onClick: () => onDownload(song)
+            onClick: () => downloadSong(song)
+          },
+          {
+            label: song.download ? "标为未下载" : "标为已下载",
+            onClick: () => handleSetDownloadStatus(!song.download)
           }
         ]}
       />

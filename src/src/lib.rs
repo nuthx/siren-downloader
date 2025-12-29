@@ -91,6 +91,27 @@ async fn download_all_music(app: tauri::AppHandle) -> Result<(usize, usize), Str
         .map_err(|e| e.to_string())
 }
 
+// 更新歌曲下载状态
+#[tauri::command]
+async fn set_download_status(
+    app: tauri::AppHandle,
+    song_id: String,
+    downloaded: bool,
+) -> Result<(), String> {
+    let mut songs = config::load_music_data(&app)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    if let Some(song) = songs.iter_mut().find(|s| s.id == song_id) {
+        song.download = downloaded;
+        config::save_music_data(&app, &songs)
+            .await
+            .map_err(|e| e.to_string())?;
+    }
+
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -115,6 +136,7 @@ pub fn run() {
             get_cover,
             download_music,
             download_all_music,
+            set_download_status,
             get_ffmpeg_version,
             download_ffmpeg,
             delete_ffmpeg,

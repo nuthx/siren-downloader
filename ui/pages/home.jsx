@@ -9,7 +9,7 @@ import { Tab } from "@/components/tab"
 import { MusicItem } from "@/components/music"
 
 export function HomePage() {
-  const { hasUpdate, songList, years, status, loading, isDownloading, refreshSongList, downloadSong, downloadAllSongs } = useAppStore()
+  const { hasUpdate, songList, years, status, loading, isDownloading, refreshSongList, downloadAllSongs } = useAppStore()
   const [selectedYear, setSelectedYear] = useState("all")
   const [selectedFilter, setSelectedFilter] = useState("all")
   const [showCover, setShowCover] = useState(true)
@@ -81,9 +81,6 @@ export function HomePage() {
         itemContent={(index) => (
           <MusicItem
             song={filteredSongs[index]}
-            loading={loading}
-            isDownloading={isDownloading}
-            onDownload={downloadSong}
             showCover={showCover}
           />
         )}
