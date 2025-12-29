@@ -230,6 +230,10 @@ pub async fn download_music(app: &AppHandle, song_id: &str) -> Result<()> {
     // 写入元数据
     println!("[Download] 写入歌曲元数据: {}", song.title);
     let song_path = base_path.with_extension(&format);
+    let publish_date = match config.id3_date_format.as_str() {
+        "full" => &song.publish,
+        _ => &song.publish[..song.publish.len().min(4)],
+    };
     if format == "mp3" {
         let mut tag = Tag::new();
         tag.set_title(&song.title);
@@ -238,7 +242,7 @@ pub async fn download_music(app: &AppHandle, song_id: &str) -> Result<()> {
         tag.set_album_artist("塞壬唱片-MSR");
         tag.set_disc(1);
         tag.set_track(song.track as u32);
-        tag.add_frame(Frame::text("TDRC", song.publish.get(..4).unwrap_or("")));
+        tag.add_frame(Frame::text("TDRC", publish_date));
         tag.set_genre("Arknights");
         tag.add_frame(Picture {
             mime_type: "image/jpeg".to_string(),
@@ -257,7 +261,7 @@ pub async fn download_music(app: &AppHandle, song_id: &str) -> Result<()> {
         comments.set_album_artist(vec!["塞壬唱片-MSR".to_string()]);
         comments.set("DISCNUMBER", vec!["1"]);
         comments.set_track(song.track as u32);
-        comments.set("DATE", vec![song.publish.get(..4).unwrap_or("")]);
+        comments.set("DATE", vec![publish_date]);
         comments.set_genre(vec!["Arknights".to_string()]);
         tag.add_picture("image/jpeg", FlacPictureType::CoverFront, cover_data);
         tag.write_to_path(&song_path)

@@ -159,7 +159,18 @@ export function SettingsPage() {
             />
           </SettingsItem>
 
-          <SettingsItem title="自定义专辑" desc="是否在专辑文件夹名称前添加日期前缀">
+          <SettingsItem title="日期元数据" desc="选择写入音频 ID3 元数据时使用的日期格式">
+            <Select
+              options={[
+                { value: "year", label: "仅年份：2025" },
+                { value: "full", label: "完整日期：2025-09-05" }
+              ]}
+              value={config.id3_date_format}
+              onChange={(value) => handleChange("id3_date_format", value)}
+            />
+          </SettingsItem>
+
+          <SettingsItem title="自定义专辑名" desc="是否在保存的专辑文件夹名称前，添加日期前缀">
             <Select
               options={[
                 { value: "none", label: "仅专辑名：焰烬曙明" },
