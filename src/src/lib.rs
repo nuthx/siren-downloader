@@ -11,12 +11,6 @@ mod utils;
 use models::SongDetail;
 use serde_json::Value;
 
-// 获取平台名称
-#[tauri::command]
-fn get_platform() -> String {
-    std::env::consts::OS.to_string()
-}
-
 // 检查更新
 #[tauri::command]
 async fn load_latest_version() -> Result<String, String> {
@@ -104,6 +98,7 @@ pub fn run() {
         .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_shell::init())
+        .plugin(tauri_plugin_os::init())
         .setup(|app| {
             #[cfg(target_os = "macos")]
             {
@@ -121,7 +116,6 @@ pub fn run() {
             download_music,
             download_all_music,
             get_ffmpeg_version,
-            get_platform,
             download_ffmpeg,
             delete_ffmpeg,
         ])

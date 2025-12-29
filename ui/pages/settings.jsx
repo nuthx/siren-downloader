@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react"
 import { appDataDir } from "@tauri-apps/api/path"
 import { invoke } from "@tauri-apps/api/core"
+import { platform } from "@tauri-apps/plugin-os"
 import { open } from "@tauri-apps/plugin-dialog"
 import { openPath } from "@tauri-apps/plugin-opener"
 import { DEFAULT_CONFIG, getConfig, saveConfig } from "@/utils/config"
@@ -13,18 +14,12 @@ import { SettingsItem } from "@/components/settings"
 export function SettingsPage() {
   const [config, setConfig] = useState(null)
   const [status, setStatus] = useState(null)
-  const [isWindows, setIsWindows] = useState(false)
   const [isDownloading, setIsDownloading] = useState(false)
 
+  // 加载配置
   useEffect(() => {
-    // 加载配置
     getConfig().then(setConfig).catch((error) => {
       setStatus({ type: "error", message: `配置加载失败: ${error}` })
-    })
-
-    // 检测操作系统
-    invoke("get_platform").then((platform) => {
-      setIsWindows(platform === "windows")
     })
   }, [])
 
@@ -118,7 +113,7 @@ export function SettingsPage() {
       <div className="flex-1 p-8 pl-10 overflow-y-scroll">
         <div className="flex flex-col gap-8 max-w-150 mx-auto">
           <SettingsItem title="FFmpeg 管理" desc="转换音频格式并缩放封面图片" className="gap-2">
-            {isWindows && (
+            {platform() === "windows" && (
               <>
                 <Button type="button" onClick={handleDownloadFFmpeg} disabled={isDownloading} className="border-border hover:border-border">
                   下载 FFmpeg

@@ -36,6 +36,7 @@
             "store:default",
             "dialog:default",
             "shell:allow-execute",
+            "os:default",
             {
               "identifier": "opener:allow-open-path",
               "allow": [{ "path": "$APPDATA" }]
