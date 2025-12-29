@@ -42,8 +42,8 @@ importers:
         specifier: ^7.11.0
         version: 7.11.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       react-virtuoso:
-        specifier: ^4.17.0
-        version: 4.17.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+        specifier: ^4.18.0
+        version: 4.18.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       tailwind-merge:
         specifier: ^3.4.0
         version: 3.4.0
@@ -1594,8 +1594,8 @@ packages:
       react-dom:
         optional: true
 
-  react-virtuoso@4.17.0:
-    resolution: {integrity: sha512-od3pi2v13v31uzn5zPXC2u3ouISFCVhjFVFch2VvS2Cx7pWA2F1aJa3XhNTN2F07M3lhfnMnsmGeH+7wZICr7w==}
+  react-virtuoso@4.18.0:
+    resolution: {integrity: sha512-bpbbqHQ/EhP4LLD+UAakmxdr+3V0A7v7s76/N51O5Jllaf68srzgSdgjji2U/7Ozbn/KKI/a+VzfnbUeQgLemQ==}
     peerDependencies:
       react: '>=16 || >=17 || >= 18 || >= 19'
       react-dom: '>=16 || >=17 || >= 18 || >=19'
@@ -3428,7 +3428,7 @@ snapshots:
     optionalDependencies:
       react-dom: 19.2.3(react@19.2.3)
 
-  react-virtuoso@4.17.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3):
+  react-virtuoso@4.18.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3):
     dependencies:
       react: 19.2.3
       react-dom: 19.2.3(react@19.2.3)
