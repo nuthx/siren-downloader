@@ -4,7 +4,7 @@ import { invoke } from "@tauri-apps/api/core"
 import { platform } from "@tauri-apps/plugin-os"
 import { open } from "@tauri-apps/plugin-dialog"
 import { openPath } from "@tauri-apps/plugin-opener"
-import { DEFAULT_CONFIG, getConfig, saveConfig } from "@/utils/config"
+import { getConfig, saveConfig, resetConfig } from "@/utils/config"
 import { cn } from "@/utils/cn"
 import { Button } from "@/components/button"
 import { Input } from "@/components/input"
@@ -87,9 +87,14 @@ export function SettingsPage() {
   }
 
   // 重置配置
-  const handleReset = () => {
-    setConfig({ ...DEFAULT_CONFIG })
-    setStatus({ type: "warning", message: "已重置为默认配置，需要点击保存后才可生效" })
+  const handleReset = async () => {
+    try {
+      await resetConfig()
+      setConfig(await getConfig())
+      setStatus({ type: "warning", message: "已重置为默认配置，需要点击保存后才可生效" })
+    } catch (error) {
+      setStatus({ type: "error", message: `重置失败: ${error}` })
+    }
   }
 
   // 保存配置
@@ -98,7 +103,6 @@ export function SettingsPage() {
     try {
       await saveConfig(config)
       setStatus({ type: "default", message: "配置已保存" })
-      setTimeout(() => setStatus(null), 5000)
     } catch (error) {
       setStatus({ type: "error", message: `保存失败: ${error}` })
     }
