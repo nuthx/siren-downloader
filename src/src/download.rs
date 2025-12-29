@@ -115,10 +115,29 @@ pub async fn download_music(app: &AppHandle, song_id: &str) -> Result<()> {
             .context("读取封面数据失败")?
     };
 
+    // 根据配置格式化专辑文件夹名称
+    let album_folder = match config.custom_album.as_str() {
+        "year" => {
+            let year = song.publish.get(..4).unwrap_or("");
+            format!("[{}] {}", year, song.album_title)
+        }
+        "lite" => {
+            let yy = song.publish.get(2..4).unwrap_or("");
+            let mm = song.publish.get(5..7).unwrap_or("");
+            let dd = song.publish.get(8..10).unwrap_or("");
+            format!("[{}{}{}] {}", yy, mm, dd, song.album_title)
+        }
+        "full" => {
+            let date = song.publish.get(..10).unwrap_or("");
+            format!("[{}] {}", date, song.album_title)
+        }
+        _ => song.album_title.clone(),
+    };
+
     // 构建文件路径
     let folder_path = PathBuf::from(&config.download_path)
         .join("明日方舟")
-        .join(fix_folder_name(&song.album_title));
+        .join(fix_folder_name(&album_folder));
     create_dir_all(&folder_path).context("无法创建下载目录")?;
     let base_path = folder_path.join(fix_filename(&song.title));
 
