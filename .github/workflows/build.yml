@@ -72,11 +72,10 @@ jobs:
             ## 修复
             - 修复内容
           releaseDraft: true
-          prerelease: false
           assetNamePattern: >-
             ${{ matrix.os == 'macos-latest'
                 && 'siren-downloader_[version]_macos_[arch][ext]'
-                || null }}
+                || '塞壬唱片下载器' }}
           args: >-
             ${{ matrix.os == 'macos-latest'
                 && format('--target {0} --bundles dmg', matrix.target)
@@ -95,4 +94,5 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
+          draft: true
           files: siren-downloader_${{ github.ref_name }}_windows_x64.zip
