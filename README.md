@@ -1,9 +1,14 @@
-<p align="center">
-  <img src="images/screenshot.webp" style="max-width: 720px; width: 90%;" />
-  <h3 align="center">明日方舟塞壬唱片下载器</h1>
-  <p align="center">从塞壬唱片官网下载原汁原味的音乐专辑，并借助网易云音乐 API 补全缺失的元数据</p>
-  <br/>
-</p>
+<div align="center">
+<h3 align="center">明日方舟塞壬唱片下载器</h1>
+<p align="center">从塞壬唱片官网下载原汁原味的音乐专辑，并借助网易云音乐 API 补全缺失的元数据</p>
+
+![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS-d8d8d8)
+![Stars](https://img.shields.io/github/stars/nuthx/siren-downloader?style=flat&color=d8d8d8)
+![License](https://img.shields.io/github/license/nuthx/siren-downloader?color=d8d8d8)
+[![Release](https://img.shields.io/github/v/release/nuthx/siren-downloader?color=d8d8d8&label=version)](https://github.com/nuthx/siren-downloader/releases/latest)
+
+<img src="images/screenshot.webp" width=720 />
+</div>
 
 ## 安装
 
