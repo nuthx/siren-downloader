@@ -132,7 +132,7 @@ export function SettingsPage() {
             </Button>
           </SettingsItem>
 
-          <SettingsItem title="存储位置" desc="歌曲将保存至该目录下的「明日方舟」文件夹中">
+          <SettingsItem title="存储位置" desc="指定下载歌曲文件时的存储位置">
             <Input value={config.download_path} onInput={(e) => handleChange("download_path", e.target.value)} placeholder="请选择下载路径" />
             <Button type="button" onClick={handleSelectFolder} className="border-l-0 border-border hover:border-border">选择文件夹</Button>
           </SettingsItem>

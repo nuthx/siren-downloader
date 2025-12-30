@@ -135,9 +135,7 @@ pub async fn download_music(app: &AppHandle, song_id: &str) -> Result<()> {
     };
 
     // 构建文件路径
-    let folder_path = PathBuf::from(&config.download_path)
-        .join("明日方舟")
-        .join(fix_folder_name(&album_folder));
+    let folder_path = PathBuf::from(&config.download_path).join(fix_folder_name(&album_folder));
     create_dir_all(&folder_path).context("无法创建下载目录")?;
     let base_path = folder_path.join(fix_filename(&song.title));
 
