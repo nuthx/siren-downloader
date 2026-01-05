@@ -75,11 +75,11 @@ jobs:
 
       - name: Prepare Windows artifact
         if: matrix.os == 'windows-latest'
-        shell: powershell
+        shell: pwsh
         run: |
-          $exe = Get-ChildItem src\target\${{ matrix.target }}\release\*.exe
-          Copy-Item $exe.FullName "${{ matrix.exeName }}"
-          Compress-Archive -Path "${{ matrix.exeName }}" -DestinationPath ${{ matrix.artifact }}
+          $exe = Get-ChildItem "src/target/${{ matrix.target }}/release/*.exe" | Select-Object -First 1
+          Copy-Item -LiteralPath $exe.FullName -Destination "${{ matrix.exeName }}"
+          Compress-Archive -LiteralPath "${{ matrix.exeName }}" -DestinationPath "${{ matrix.artifact }}"
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
