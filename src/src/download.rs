@@ -12,7 +12,7 @@ use metaflac::block::PictureType as FlacPictureType;
 use metaflac::Tag as FlacTag;
 use reqwest::get;
 use serde_json::json;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fs::{create_dir_all, remove_file, write, File};
 use std::io::BufReader;
 use std::path::{Path, PathBuf};
@@ -22,7 +22,7 @@ use tokio::fs as async_fs;
 use tokio::io::AsyncWriteExt;
 
 // 下载单首歌曲
-pub async fn download_music(app: &AppHandle, song_id: &str) -> Result<()> {
+async fn download_one_music(app: &AppHandle, song_id: &str) -> Result<()> {
     let config = load_app_config(app).await?;
 
     // 检查下载路径
@@ -279,40 +279,89 @@ pub async fn download_music(app: &AppHandle, song_id: &str) -> Result<()> {
     Ok(())
 }
 
-// 批量下载所有歌曲
-pub async fn download_all_music(app: &AppHandle) -> Result<(usize, usize)> {
-    let config = load_app_config(app).await?;
+// 下载歌曲
+pub async fn download_music(
+    app: &AppHandle,
+    song_ids: Option<&[String]>,
+) -> Result<(usize, usize)> {
     let songs = load_music_data(app).await?;
+    let queue: Vec<(String, String)> = match song_ids {
+        Some(song_ids) => {
+            let song_titles: HashMap<&str, &str> = songs
+                .iter()
+                .map(|song| (song.id.as_str(), song.title.as_str()))
+                .collect();
+            let mut seen = HashSet::new();
 
-    // 待下载歌曲
-    let pending: Vec<_> = songs
-        .iter()
-        .filter(|s| !s.download && (config.download_instrumental || !s.instrumental))
-        .collect();
+            song_ids
+                .iter()
+                .filter_map(|song_id| {
+                    let song_id = song_id.as_str();
+                    if !seen.insert(song_id) {
+                        return None;
+                    }
 
-    let total = pending.len();
+                    song_titles
+                        .get(song_id)
+                        .map(|title| (song_id.to_string(), (*title).to_string()))
+                })
+                .collect()
+        }
+        None => {
+            let config = load_app_config(app).await?;
+            songs
+                .iter()
+                .filter(|song| {
+                    !song.download && (config.download_instrumental || !song.instrumental)
+                })
+                .map(|song| (song.id.clone(), song.title.clone()))
+                .collect()
+        }
+    };
+
+    let total = queue.len();
+    if total == 0 {
+        return Ok((0, 0));
+    }
+
     let mut success_count = 0;
     let mut fail_count = 0;
 
-    for (i, song) in pending.iter().enumerate() {
-        let success = download_music(app, &song.id).await.is_ok();
+    for (i, (song_id, song_title)) in queue.iter().enumerate() {
+        let _ = app.emit(
+            "download-progress",
+            json!({
+                "current": i + 1,
+                "total": total,
+                "song_id": song_id,
+                "song_title": song_title,
+                "stage": "start"
+            }),
+        );
+
+        let result = download_one_music(app, song_id).await;
+        let success = result.is_ok();
         if success {
             success_count += 1;
         } else {
             fail_count += 1;
         }
 
-        // 发送事件
         let _ = app.emit(
             "download-progress",
             json!({
                 "current": i + 1,
                 "total": total,
-                "song_id": song.id,
-                "song_title": song.title,
-                "success": success
+                "song_id": song_id,
+                "song_title": song_title,
+                "success": success,
+                "stage": "complete"
             }),
         );
+
+        if total == 1 {
+            result?;
+        }
     }
 
     Ok((success_count, fail_count))
