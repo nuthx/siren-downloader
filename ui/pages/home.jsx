@@ -9,15 +9,35 @@ import { Tab } from "@/components/tab"
 import { MusicItem } from "@/components/music"
 
 export function HomePage() {
-  const { hasUpdate, songList, years, status, loading, isDownloading, refreshSongList, downloadAllSongs } = useAppStore()
+  const {
+    hasUpdate,
+    songList,
+    years,
+    status,
+    loading,
+    isDownloading,
+    refreshSongList,
+    downloadSongs
+  } = useAppStore()
   const [selectedYear, setSelectedYear] = useState("all")
   const [selectedFilter, setSelectedFilter] = useState("all")
   const [showCover, setShowCover] = useState(true)
+  const [selectedSongIds, setSelectedSongIds] = useState([])
 
   // 是否显示封面
   useEffect(() => {
     getConfig().then((config) => setShowCover(config.show_cover))
   }, [])
+
+  useEffect(() => {
+    if (!songList?.length) {
+      setSelectedSongIds([])
+      return
+    }
+
+    const availableSongIds = new Set(songList.map((song) => song.id))
+    setSelectedSongIds((current) => current.filter((songId) => availableSongIds.has(songId)))
+  }, [songList])
 
   // 缓存过滤后的歌曲列表
   const filteredSongs = useMemo(() => {
@@ -41,6 +61,30 @@ export function HomePage() {
     // 专辑层面倒序显示，歌曲顺序保持正序不变
     return [...albumMap.values()].reverse().flat()
   }, [songList, selectedYear, selectedFilter])
+
+  const selectedSongIdSet = useMemo(() => new Set(selectedSongIds), [selectedSongIds])
+  const selectedSongs = useMemo(
+    () => (songList || []).filter((song) => selectedSongIdSet.has(song.id)),
+    [songList, selectedSongIdSet]
+  )
+
+  const toggleSongSelection = (songId) => {
+    setSelectedSongIds((current) => (
+      current.includes(songId)
+        ? current.filter((id) => id !== songId)
+        : [...current, songId]
+    ))
+  }
+
+  const handleDownloadSelected = async () => {
+    const result = await downloadSongs(selectedSongs)
+    if (!result?.successSongIds?.length) {
+      return
+    }
+
+    const successSongIds = new Set(result.successSongIds)
+    setSelectedSongIds((current) => current.filter((songId) => !successSongIds.has(songId)))
+  }
 
   if (!songList) {
     return (
@@ -82,12 +126,14 @@ export function HomePage() {
           <MusicItem
             song={filteredSongs[index]}
             showCover={showCover}
+            selected={selectedSongIdSet.has(filteredSongs[index].id)}
+            onToggleSelect={toggleSongSelection}
           />
         )}
       />
 
       <div className="flex-center justify-end gap-4 mx-10 py-6 border-t">
-        {status && <span className={cn("flex-1", status?.type === "error" && "text-red-400", status?.type === "warning" && "text-amber-400")}>{status.message}</span>}
+        {status && <span className={cn("flex-1 min-w-0 truncate", status?.type === "error" && "text-red-400", status?.type === "warning" && "text-amber-400")}>{status.message}</span>}
         {hasUpdate && (
           <Button
             onClick={() => openUrl("https://github.com/nuthx/siren-downloader/releases/latest")}
@@ -97,7 +143,8 @@ export function HomePage() {
           </Button>
         )}
         <Button onClick={refreshSongList} disabled={loading}>更新歌曲列表</Button>
-        <Button onClick={downloadAllSongs} disabled={loading || isDownloading}>下载所有歌曲</Button>
+        <Button onClick={handleDownloadSelected} disabled={loading || isDownloading || selectedSongIds.length === 0}>下载所选歌曲</Button>
+        <Button onClick={() => downloadSongs()} disabled={loading || isDownloading}>下载所有歌曲</Button>
       </div>
     </div>
   )

@@ -22,9 +22,9 @@ listen("navigate", (event) => {
 
 // 监听菜单功能
 listen("menu-action", (event) => {
-  const { refreshSongList, downloadAllSongs } = useAppStore.getState()
+  const { refreshSongList, downloadSongs } = useAppStore.getState()
   if (event.payload === "refresh") refreshSongList()
-  else if (event.payload === "download_all") downloadAllSongs()
+  else if (event.payload === "download_all") downloadSongs()
 })
 
 createRoot(document.getElementById("root")).render(

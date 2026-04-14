@@ -75,18 +75,13 @@ async fn get_cover(
     Ok(path.to_string_lossy().to_string())
 }
 
-// 下载单首歌曲
+// 下载歌曲
 #[tauri::command]
-async fn download_music(app: tauri::AppHandle, song_id: String) -> Result<(), String> {
-    download::download_music(&app, &song_id)
-        .await
-        .map_err(|e| e.to_string())
-}
-
-// 批量下载所有待下载歌曲
-#[tauri::command]
-async fn download_all_music(app: tauri::AppHandle) -> Result<(usize, usize), String> {
-    download::download_all_music(&app)
+async fn download_music(
+    app: tauri::AppHandle,
+    song_ids: Option<Vec<String>>,
+) -> Result<(usize, usize), String> {
+    download::download_music(&app, song_ids.as_deref())
         .await
         .map_err(|e| e.to_string())
 }
@@ -114,10 +109,7 @@ async fn set_download_status(
 
 // 批量更新所有歌曲下载状态
 #[tauri::command]
-async fn set_all_download_status(
-    app: tauri::AppHandle,
-    downloaded: bool,
-) -> Result<usize, String> {
+async fn set_all_download_status(app: tauri::AppHandle, downloaded: bool) -> Result<usize, String> {
     let mut songs = config::load_music_data(&app)
         .await
         .map_err(|e| e.to_string())?;
@@ -166,7 +158,6 @@ pub fn run() {
             refresh_music_list,
             get_cover,
             download_music,
-            download_all_music,
             set_download_status,
             set_all_download_status,
             get_ffmpeg_version,
