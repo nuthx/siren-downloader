@@ -6,15 +6,18 @@ import { open } from "@tauri-apps/plugin-dialog"
 import { openPath } from "@tauri-apps/plugin-opener"
 import { getConfig, saveConfig, resetConfig } from "@/utils/config"
 import { cn } from "@/utils/cn"
+import { useAppStore } from "@/utils/store"
 import { Button } from "@/components/button"
 import { Input } from "@/components/input"
 import { Select } from "@/components/select"
 import { SettingsItem } from "@/components/settings"
 
 export function SettingsPage() {
+  const { songList, setAllSongStatuses } = useAppStore()
   const [config, setConfig] = useState(null)
   const [status, setStatus] = useState(null)
   const [isDownloading, setIsDownloading] = useState(false)
+  const [isUpdatingDownloadStatus, setIsUpdatingDownloadStatus] = useState(false)
 
   // 加载配置
   useEffect(() => {
@@ -94,6 +97,28 @@ export function SettingsPage() {
       setStatus({ type: "warning", message: "已重置为默认配置，需要点击保存后才可生效" })
     } catch (error) {
       setStatus({ type: "error", message: `重置失败: ${error}` })
+    }
+  }
+
+  // 批量更新歌曲下载状态
+  const handleSetAllDownloadStatus = async (downloaded) => {
+    setIsUpdatingDownloadStatus(true)
+    try {
+      const changed = await invoke("set_all_download_status", { downloaded })
+      if (changed > 0) {
+        setAllSongStatuses(downloaded)
+      }
+
+      setStatus({
+        type: "default",
+        message: changed === 0
+          ? `所有歌曲已经是${downloaded ? "已下载" : "未下载"}状态`
+          : `已将 ${changed} 首歌曲标为${downloaded ? "已下载" : "未下载"}`
+      })
+    } catch (error) {
+      setStatus({ type: "error", message: `批量更新失败: ${error}` })
+    } finally {
+      setIsUpdatingDownloadStatus(false)
     }
   }
 
@@ -192,6 +217,25 @@ export function SettingsPage() {
               value={config.show_cover}
               onChange={(value) => handleChange("show_cover", value)}
             />
+          </SettingsItem>
+
+          <SettingsItem title="下载状态" className="gap-2">
+            <Button
+              type="button"
+              onClick={() => handleSetAllDownloadStatus(true)}
+              disabled={!songList?.length || isUpdatingDownloadStatus}
+              className="border-border hover:border-border"
+            >
+              全部标为已下载
+            </Button>
+            <Button
+              type="button"
+              onClick={() => handleSetAllDownloadStatus(false)}
+              disabled={!songList?.length || isUpdatingDownloadStatus}
+              className="border-border hover:border-border"
+            >
+              全部标为未下载
+            </Button>
           </SettingsItem>
 
           {import.meta.env.DEV && (

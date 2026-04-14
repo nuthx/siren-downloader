@@ -71,7 +71,14 @@ export const useAppStore = create((set) => ({
   // 在前端更新歌曲下载状态（仅前端）
   updateSongStatus: (songId, downloaded) => {
     set((state) => ({
-      songList: state.songList.map((s) => s.id === songId ? { ...s, download: downloaded } : s)
+      songList: state.songList?.map((s) => s.id === songId ? { ...s, download: downloaded } : s) ?? state.songList
+    }))
+  },
+
+  // 在前端批量更新歌曲下载状态（仅前端）
+  setAllSongStatuses: (downloaded) => {
+    set((state) => ({
+      songList: state.songList?.map((song) => ({ ...song, download: downloaded })) ?? state.songList
     }))
   },
 

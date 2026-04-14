@@ -112,6 +112,37 @@ async fn set_download_status(
     Ok(())
 }
 
+// 批量更新所有歌曲下载状态
+#[tauri::command]
+async fn set_all_download_status(
+    app: tauri::AppHandle,
+    downloaded: bool,
+) -> Result<usize, String> {
+    let mut songs = config::load_music_data(&app)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    if songs.is_empty() {
+        return Ok(0);
+    }
+
+    let mut changed = 0;
+    for song in &mut songs {
+        if song.download != downloaded {
+            song.download = downloaded;
+            changed += 1;
+        }
+    }
+
+    if changed > 0 {
+        config::save_music_data(&app, &songs)
+            .await
+            .map_err(|e| e.to_string())?;
+    }
+
+    Ok(changed)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -137,6 +168,7 @@ pub fn run() {
             download_music,
             download_all_music,
             set_download_status,
+            set_all_download_status,
             get_ffmpeg_version,
             download_ffmpeg,
             delete_ffmpeg,
