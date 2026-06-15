@@ -324,42 +324,73 @@ pub async fn download_music(
         return Ok((0, 0));
     }
 
+    // 获取并发下载数量配置
+    let config = load_app_config(app).await?;
+    let concurrent_downloads = config.concurrent_downloads.max(1).min(10);
+
     let mut success_count = 0;
     let mut fail_count = 0;
 
-    for (i, (song_id, song_title)) in queue.iter().enumerate() {
-        let _ = app.emit(
-            "download-progress",
-            json!({
-                "current": i + 1,
-                "total": total,
-                "song_id": song_id,
-                "song_title": song_title,
-                "stage": "start"
-            }),
-        );
+    // 将 queue 转换为 owned 数据
+    let queue_owned: Vec<(usize, String, String)> = queue
+        .iter()
+        .enumerate()
+        .map(|(i, (song_id, song_title))| (i, song_id.clone(), song_title.clone()))
+        .collect();
 
-        let result = download_one_music(app, song_id).await;
-        let success = result.is_ok();
+    // 使用 futures 的 stream 实现并发下载
+    use futures::stream;
+    let results: Vec<_> = stream::iter(queue_owned)
+        .map(|(i, song_id, song_title)| {
+            let app = app.clone();
+
+            async move {
+                // 发送开始事件
+                let _ = app.emit(
+                    "download-progress",
+                    json!({
+                        "current": i + 1,
+                        "total": total,
+                        "song_id": song_id,
+                        "song_title": song_title,
+                        "stage": "start"
+                    }),
+                );
+
+                // 执行下载
+                let result = download_one_music(&app, &song_id).await;
+                let success = result.is_ok();
+
+                // 发送完成事件
+                let _ = app.emit(
+                    "download-progress",
+                    json!({
+                        "current": i + 1,
+                        "total": total,
+                        "song_id": song_id,
+                        "song_title": song_title,
+                        "success": success,
+                        "stage": "complete"
+                    }),
+                );
+
+                (i, success, result)
+            }
+        })
+        .buffer_unordered(concurrent_downloads)
+        .collect()
+        .await;
+
+    // 统计结果
+    for (i, success, result) in results {
         if success {
             success_count += 1;
         } else {
             fail_count += 1;
         }
 
-        let _ = app.emit(
-            "download-progress",
-            json!({
-                "current": i + 1,
-                "total": total,
-                "song_id": song_id,
-                "song_title": song_title,
-                "success": success,
-                "stage": "complete"
-            }),
-        );
-
-        if total == 1 {
+        // 如果只有一首歌且失败，抛出错误
+        if total == 1 && i == 0 {
             result?;
         }
     }

@@ -5,6 +5,7 @@ use serde_json::Value;
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct AppConfig {
     pub download_path: String,
+    pub concurrent_downloads: usize,
     pub download_instrumental: bool,
     pub download_lyrics: bool,
     pub id3_date_format: String,

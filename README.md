@@ -4,6 +4,7 @@
 
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS-d8d8d8)
 ![Stars](https://img.shields.io/github/stars/nuthx/siren-downloader?style=flat&color=d8d8d8)
+![Downloads](https://img.shields.io/github/downloads/nuthx/siren-downloader/total?color=d8d8d8)
 ![License](https://img.shields.io/github/license/nuthx/siren-downloader?color=d8d8d8)
 [![Release](https://img.shields.io/github/v/release/nuthx/siren-downloader?color=d8d8d8&label=version)](https://github.com/nuthx/siren-downloader/releases/latest)
 
