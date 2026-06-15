@@ -2,6 +2,7 @@ import { load } from "@tauri-apps/plugin-store"
 
 const DEFAULT_CONFIG = {
   download_path: "",
+  concurrent_downloads: 3,
   download_instrumental: false,
   download_lyrics: false,
   id3_date_format: "year",

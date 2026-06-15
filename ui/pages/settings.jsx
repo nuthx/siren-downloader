@@ -162,6 +162,21 @@ export function SettingsPage() {
             <Button type="button" onClick={handleSelectFolder} className="border-l-0 border-border hover:border-border">选择文件夹</Button>
           </SettingsItem>
 
+          <SettingsItem title="并行下载数量" desc="同时进行下载的任务数量，数值越大下载越快但占用资源也越多">
+            <Select
+              options={[
+                { value: 1, label: "1 个" },
+                { value: 2, label: "2 个" },
+                { value: 3, label: "3 个（推荐）" },
+                { value: 4, label: "4 个" },
+                { value: 5, label: "5 个" },
+                { value: 6, label: "6 个" }
+              ]}
+              value={config.concurrent_downloads}
+              onChange={(value) => handleChange("concurrent_downloads", value)}
+            />
+          </SettingsItem>
+
           <SettingsItem title="下载伴奏" desc="是否同时下载标题含 Instrumental 的伴奏版本">
             <Select
               options={[
