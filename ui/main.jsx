@@ -1,15 +1,15 @@
 import "@/globals.css"
+import { listen } from "@tauri-apps/api/event"
 import { StrictMode, useEffect } from "react"
 import { createRoot } from "react-dom/client"
-import { HashRouter, Routes, Route } from "react-router-dom"
-import { listen } from "@tauri-apps/api/event"
-import { initConfig } from "@/utils/config"
-import { useAppStore } from "@/utils/store"
-import { AppWindow, MainContent } from "@/components/window"
+import { HashRouter, Route, Routes } from "react-router-dom"
 import { Nav, NavButton } from "@/components/nav"
+import { AppWindow, MainContent } from "@/components/window"
+import { AboutPage } from "@/pages/about"
 import { HomePage } from "@/pages/home"
 import { SettingsPage } from "@/pages/settings"
-import { AboutPage } from "@/pages/about"
+import { initConfig } from "@/utils/config"
+import { useAppStore } from "@/utils/store"
 
 // 初始化配置和应用数据
 initConfig().catch(console.error)
@@ -65,5 +65,5 @@ createRoot(document.getElementById("root")).render(
     <HashRouter>
       <App />
     </HashRouter>
-  </StrictMode>
+  </StrictMode>,
 )

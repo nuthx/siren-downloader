@@ -1,24 +1,15 @@
 import { openUrl } from "@tauri-apps/plugin-opener"
-import { useState, useMemo, useEffect } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { VirtuosoGrid } from "react-virtuoso"
-import { useAppStore } from "@/utils/store"
-import { getConfig } from "@/utils/config"
-import { cn } from "@/utils/cn"
 import { Button } from "@/components/button"
-import { Tab } from "@/components/tab"
 import { MusicItem } from "@/components/music"
+import { Tab } from "@/components/tab"
+import { cn } from "@/utils/cn"
+import { getConfig } from "@/utils/config"
+import { useAppStore } from "@/utils/store"
 
 export function HomePage() {
-  const {
-    hasUpdate,
-    songList,
-    years,
-    status,
-    loading,
-    isDownloading,
-    refreshSongList,
-    downloadSongs
-  } = useAppStore()
+  const { hasUpdate, songList, years, status, loading, isDownloading, refreshSongList, downloadSongs } = useAppStore()
   const [selectedYear, setSelectedYear] = useState("all")
   const [selectedFilter, setSelectedFilter] = useState("all")
   const [showCover, setShowCover] = useState(true)
@@ -45,9 +36,9 @@ export function HomePage() {
       const { publish, download, album_id = "" } = song
 
       if (
-        (selectedYear !== "all" && !publish?.startsWith(selectedYear))
-        || (selectedFilter === "pending" && download)
-        || (selectedFilter === "downloaded" && !download)
+        (selectedYear !== "all" && !publish?.startsWith(selectedYear)) ||
+        (selectedFilter === "pending" && download) ||
+        (selectedFilter === "downloaded" && !download)
       ) {
         return map
       }
@@ -65,15 +56,13 @@ export function HomePage() {
   const selectedSongIdSet = useMemo(() => new Set(selectedSongIds), [selectedSongIds])
   const selectedSongs = useMemo(
     () => (songList || []).filter((song) => selectedSongIdSet.has(song.id)),
-    [songList, selectedSongIdSet]
+    [songList, selectedSongIdSet],
   )
 
   const toggleSongSelection = (songId) => {
-    setSelectedSongIds((current) => (
-      current.includes(songId)
-        ? current.filter((id) => id !== songId)
-        : [...current, songId]
-    ))
+    setSelectedSongIds((current) =>
+      current.includes(songId) ? current.filter((id) => id !== songId) : [...current, songId],
+    )
   }
 
   const handleDownloadSelected = async () => {
@@ -91,7 +80,9 @@ export function HomePage() {
       <div className="flex-center flex-col gap-2 h-full">
         <h2 className="text-2xl">暂无数据</h2>
         <span className="text-secondary pb-6">{status?.message}</span>
-        <Button onClick={refreshSongList} disabled={loading}>获取歌曲列表</Button>
+        <Button onClick={refreshSongList} disabled={loading}>
+          获取歌曲列表
+        </Button>
       </div>
     )
   }
@@ -100,10 +91,7 @@ export function HomePage() {
     <div className="flex flex-col h-full overflow-hidden">
       <div className="flex-center justify-between mx-10 px-6 py-5 border border-t-0 backdrop-blur-2xs">
         <Tab
-          items={[
-            { value: "all", label: "全部年份" },
-            ...years.map((year) => ({ value: year, label: year }))
-          ]}
+          items={[{ value: "all", label: "全部年份" }, ...years.map((year) => ({ value: year, label: year }))]}
           value={selectedYear}
           onChange={setSelectedYear}
         />
@@ -111,7 +99,7 @@ export function HomePage() {
           items={[
             { value: "all", label: "全部歌曲" },
             { value: "pending", label: "待下载" },
-            { value: "downloaded", label: "已下载" }
+            { value: "downloaded", label: "已下载" },
           ]}
           value={selectedFilter}
           onChange={setSelectedFilter}
@@ -133,7 +121,17 @@ export function HomePage() {
       />
 
       <div className="flex-center justify-end gap-4 mx-10 py-6 border-t">
-        {status && <span className={cn("flex-1 min-w-0 truncate", status?.type === "error" && "text-red-400", status?.type === "warning" && "text-amber-400")}>{status.message}</span>}
+        {status && (
+          <span
+            className={cn(
+              "flex-1 min-w-0 truncate",
+              status?.type === "error" && "text-red-400",
+              status?.type === "warning" && "text-amber-400",
+            )}
+          >
+            {status.message}
+          </span>
+        )}
         {hasUpdate && (
           <Button
             onClick={() => openUrl("https://github.com/nuthx/siren-downloader/releases/latest")}
@@ -142,9 +140,15 @@ export function HomePage() {
             发现新版本
           </Button>
         )}
-        <Button onClick={refreshSongList} disabled={loading}>更新歌曲列表</Button>
-        <Button onClick={handleDownloadSelected} disabled={loading || isDownloading || selectedSongIds.length === 0}>下载所选歌曲</Button>
-        <Button onClick={() => downloadSongs()} disabled={loading || isDownloading}>下载所有歌曲</Button>
+        <Button onClick={refreshSongList} disabled={loading}>
+          更新歌曲列表
+        </Button>
+        <Button onClick={handleDownloadSelected} disabled={loading || isDownloading || selectedSongIds.length === 0}>
+          下载所选歌曲
+        </Button>
+        <Button onClick={() => downloadSongs()} disabled={loading || isDownloading}>
+          下载所有歌曲
+        </Button>
       </div>
     </div>
   )

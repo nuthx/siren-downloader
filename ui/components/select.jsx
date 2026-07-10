@@ -7,7 +7,9 @@ export function Select({ options, value, onChange, className }) {
 
   return (
     <Listbox value={value} onChange={onChange}>
-      <ListboxButton className={cn("group flex-center gap-3 w-full h-10 px-4 border backdrop-blur-2xs cursor-pointer", className)}>
+      <ListboxButton
+        className={cn("group flex-center gap-3 w-full h-10 px-4 border backdrop-blur-2xs cursor-pointer", className)}
+      >
         <span className="flex-1 text-left truncate cursor-pointer">{selectedOption?.label || ""}</span>
         <ChevronDown className="size-4 text-secondary shrink-0 transition-all group-data-open:rotate-180" />
       </ListboxButton>

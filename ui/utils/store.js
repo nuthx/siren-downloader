@@ -1,7 +1,7 @@
-import packageJson from "#/package.json"
 import { invoke } from "@tauri-apps/api/core"
 import { listen } from "@tauri-apps/api/event"
 import { create } from "zustand"
+import packageJson from "#/package.json"
 import { extractYears } from "@/utils/year"
 
 export const useAppStore = create((set, get) => ({
@@ -15,18 +15,20 @@ export const useAppStore = create((set, get) => ({
   // 初始化应用数据
   initAppData: async () => {
     // 检查更新（独立执行，不阻塞其他初始化）
-    invoke("load_latest_version").then((latestVersion) => {
-      if (latestVersion && latestVersion.trim() !== packageJson.version.trim()) {
-        set({ hasUpdate: true })
-      }
-    }).catch((error) => {
-      console.error("检查更新失败:", error)
-    })
+    invoke("load_latest_version")
+      .then((latestVersion) => {
+        if (latestVersion && latestVersion.trim() !== packageJson.version.trim()) {
+          set({ hasUpdate: true })
+        }
+      })
+      .catch((error) => {
+        console.error("检查更新失败:", error)
+      })
 
     // 同步加载本地和远程歌曲数据
     const [localSongs, remoteSongs] = await Promise.all([
       invoke("load_local_music").catch(() => null),
-      invoke("load_remote_music").catch(() => null)
+      invoke("load_remote_music").catch(() => null),
     ])
 
     // 先处理本地歌曲数据，如果没有则提前返回
@@ -36,13 +38,18 @@ export const useAppStore = create((set, get) => ({
     }
     set({
       songList: localSongs,
-      years: extractYears(localSongs)
+      years: extractYears(localSongs),
     })
 
     if (!remoteSongs) {
       set({ status: { type: "error", message: `已加载本地 ${localSongs.length} 首歌曲，但无法获取官网的歌曲信息` } })
     } else if (remoteSongs.length !== localSongs.length) {
-      set({ status: { type: "warning", message: `已加载本地 ${localSongs.length} 首歌曲，但官网有 ${remoteSongs.length} 首歌曲。请先更新歌曲列表` } })
+      set({
+        status: {
+          type: "warning",
+          message: `已加载本地 ${localSongs.length} 首歌曲，但官网有 ${remoteSongs.length} 首歌曲。请先更新歌曲列表`,
+        },
+      })
     } else {
       set({ status: { type: "default", message: `已加载本地 ${localSongs.length} 首歌曲` } })
     }
@@ -52,14 +59,14 @@ export const useAppStore = create((set, get) => ({
   refreshSongList: async () => {
     set({
       loading: true,
-      status: { type: "default", message: "正在更新歌曲列表" }
+      status: { type: "default", message: "正在更新歌曲列表" },
     })
     try {
       const result = await invoke("refresh_music_list")
       set({
         songList: result,
         years: extractYears(result),
-        status: { type: "default", message: `更新完成，已保存 ${result.length} 首歌曲信息` }
+        status: { type: "default", message: `更新完成，已保存 ${result.length} 首歌曲信息` },
       })
     } catch (error) {
       set({ status: { type: "error", message: `更新失败: ${error}` } })
@@ -71,14 +78,14 @@ export const useAppStore = create((set, get) => ({
   // 在前端更新歌曲下载状态（仅前端）
   updateSongStatus: (songId, downloaded) => {
     set((state) => ({
-      songList: state.songList?.map((s) => s.id === songId ? { ...s, download: downloaded } : s) ?? state.songList
+      songList: state.songList?.map((s) => (s.id === songId ? { ...s, download: downloaded } : s)) ?? state.songList,
     }))
   },
 
   // 在前端批量更新歌曲下载状态（仅前端）
   setAllSongStatuses: (downloaded) => {
     set((state) => ({
-      songList: state.songList?.map((song) => ({ ...song, download: downloaded })) ?? state.songList
+      songList: state.songList?.map((song) => ({ ...song, download: downloaded })) ?? state.songList,
     }))
   },
 
@@ -97,10 +104,12 @@ export const useAppStore = create((set, get) => ({
     const unlisten = await listen("download-progress", (event) => {
       const { current, total, song_id, song_title, success, stage } = event.payload
       if (stage === "start") {
-        set({ status: {
-          type: "default",
-          message: isSingle ? `下载中: ${song_title}` : `下载中 (${current}/${total}): ${song_title}`
-        } })
+        set({
+          status: {
+            type: "default",
+            message: isSingle ? `下载中: ${song_title}` : `下载中 (${current}/${total}): ${song_title}`,
+          },
+        })
       }
       if (stage === "complete" && success) {
         successSongIds.push(song_id)
@@ -110,7 +119,7 @@ export const useAppStore = create((set, get) => ({
 
     set({
       isDownloading: true,
-      loading: isAll || !isSingle
+      loading: isAll || !isSingle,
     })
 
     try {
@@ -136,5 +145,5 @@ export const useAppStore = create((set, get) => ({
       unlisten()
       set({ isDownloading: false, loading: false })
     }
-  }
+  },
 }))

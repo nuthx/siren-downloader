@@ -1,16 +1,16 @@
-import { useState, useEffect } from "react"
-import { appDataDir } from "@tauri-apps/api/path"
 import { invoke } from "@tauri-apps/api/core"
-import { platform } from "@tauri-apps/plugin-os"
+import { appDataDir } from "@tauri-apps/api/path"
 import { open } from "@tauri-apps/plugin-dialog"
 import { openPath } from "@tauri-apps/plugin-opener"
-import { getConfig, saveConfig, resetConfig } from "@/utils/config"
-import { cn } from "@/utils/cn"
-import { useAppStore } from "@/utils/store"
+import { platform } from "@tauri-apps/plugin-os"
+import { useEffect, useState } from "react"
 import { Button } from "@/components/button"
 import { Input } from "@/components/input"
 import { Select } from "@/components/select"
 import { SettingsItem } from "@/components/settings"
+import { cn } from "@/utils/cn"
+import { getConfig, resetConfig, saveConfig } from "@/utils/config"
+import { useAppStore } from "@/utils/store"
 
 export function SettingsPage() {
   const { songList, setAllSongStatuses } = useAppStore()
@@ -21,9 +21,11 @@ export function SettingsPage() {
 
   // 加载配置
   useEffect(() => {
-    getConfig().then(setConfig).catch((error) => {
-      setStatus({ type: "error", message: `配置加载失败: ${error}` })
-    })
+    getConfig()
+      .then(setConfig)
+      .catch((error) => {
+        setStatus({ type: "error", message: `配置加载失败: ${error}` })
+      })
   }, [])
 
   // 处理配置项改变
@@ -111,9 +113,10 @@ export function SettingsPage() {
 
       setStatus({
         type: "default",
-        message: changed === 0
-          ? `所有歌曲已经是${downloaded ? "已下载" : "未下载"}状态`
-          : `已将 ${changed} 首歌曲标为${downloaded ? "已下载" : "未下载"}`
+        message:
+          changed === 0
+            ? `所有歌曲已经是${downloaded ? "已下载" : "未下载"}状态`
+            : `已将 ${changed} 首歌曲标为${downloaded ? "已下载" : "未下载"}`,
       })
     } catch (error) {
       setStatus({ type: "error", message: `批量更新失败: ${error}` })
@@ -141,25 +144,50 @@ export function SettingsPage() {
     <form onSubmit={handleSubmit} className="flex flex-col h-full overflow-hidden">
       <div className="flex-1 p-8 pl-10 overflow-y-scroll">
         <div className="flex flex-col gap-8 max-w-150 mx-auto">
-          <SettingsItem title="FFmpeg 管理" desc="用于转换音频格式和压缩封面图片，使用前请确保已正确安装" className="gap-2">
+          <SettingsItem
+            title="FFmpeg 管理"
+            desc="用于转换音频格式和压缩封面图片，使用前请确保已正确安装"
+            className="gap-2"
+          >
             {platform() === "windows" && (
               <>
-                <Button type="button" onClick={handleDownloadFFmpeg} disabled={isDownloading} className="border-border hover:border-border">
+                <Button
+                  type="button"
+                  onClick={handleDownloadFFmpeg}
+                  disabled={isDownloading}
+                  className="border-border hover:border-border"
+                >
                   下载 FFmpeg
                 </Button>
-                <Button type="button" onClick={handleDeleteFFmpeg} disabled={isDownloading} className="border-border hover:border-border">
+                <Button
+                  type="button"
+                  onClick={handleDeleteFFmpeg}
+                  disabled={isDownloading}
+                  className="border-border hover:border-border"
+                >
                   删除 FFmpeg
                 </Button>
               </>
             )}
-            <Button type="button" onClick={handleCheckVersion} disabled={isDownloading} className="border-border hover:border-border">
+            <Button
+              type="button"
+              onClick={handleCheckVersion}
+              disabled={isDownloading}
+              className="border-border hover:border-border"
+            >
               查看版本
             </Button>
           </SettingsItem>
 
           <SettingsItem title="存储位置" desc="指定下载歌曲文件时的存储位置">
-            <Input value={config.download_path} onInput={(e) => handleChange("download_path", e.target.value)} placeholder="请选择下载路径" />
-            <Button type="button" onClick={handleSelectFolder} className="border-l-0 border-border hover:border-border">选择文件夹</Button>
+            <Input
+              value={config.download_path}
+              onInput={(e) => handleChange("download_path", e.target.value)}
+              placeholder="请选择下载路径"
+            />
+            <Button type="button" onClick={handleSelectFolder} className="border-l-0 border-border hover:border-border">
+              选择文件夹
+            </Button>
           </SettingsItem>
 
           <SettingsItem title="并行下载数量" desc="同时进行下载的任务数量，数值越大下载越快但占用资源也越多">
@@ -170,7 +198,7 @@ export function SettingsPage() {
                 { value: 3, label: "3 个（推荐）" },
                 { value: 4, label: "4 个" },
                 { value: 5, label: "5 个" },
-                { value: 6, label: "6 个" }
+                { value: 6, label: "6 个" },
               ]}
               value={config.concurrent_downloads}
               onChange={(value) => handleChange("concurrent_downloads", value)}
@@ -181,7 +209,7 @@ export function SettingsPage() {
             <Select
               options={[
                 { value: false, label: "不下载伴奏" },
-                { value: true, label: "下载伴奏" }
+                { value: true, label: "下载伴奏" },
               ]}
               value={config.download_instrumental}
               onChange={(value) => handleChange("download_instrumental", value)}
@@ -192,7 +220,7 @@ export function SettingsPage() {
             <Select
               options={[
                 { value: false, label: "不下载歌词" },
-                { value: true, label: "下载歌词" }
+                { value: true, label: "下载歌词" },
               ]}
               value={config.download_lyrics}
               onChange={(value) => handleChange("download_lyrics", value)}
@@ -203,7 +231,7 @@ export function SettingsPage() {
             <Select
               options={[
                 { value: "year", label: "仅年份：2025" },
-                { value: "full", label: "完整日期：2025-09-05" }
+                { value: "full", label: "完整日期：2025-09-05" },
               ]}
               value={config.id3_date_format}
               onChange={(value) => handleChange("id3_date_format", value)}
@@ -216,7 +244,7 @@ export function SettingsPage() {
                 { value: "none", label: "仅专辑名：焰烬曙明" },
                 { value: "year", label: "年份前缀：[2025] 焰烬曙明" },
                 { value: "lite", label: "简单日期前缀：[250905] 焰烬曙明" },
-                { value: "full", label: "完整日期前缀：[2025-09-05] 焰烬曙明" }
+                { value: "full", label: "完整日期前缀：[2025-09-05] 焰烬曙明" },
               ]}
               value={config.custom_album}
               onChange={(value) => handleChange("custom_album", value)}
@@ -227,7 +255,7 @@ export function SettingsPage() {
             <Select
               options={[
                 { value: true, label: "显示封面" },
-                { value: false, label: "隐藏封面" }
+                { value: false, label: "隐藏封面" },
               ]}
               value={config.show_cover}
               onChange={(value) => handleChange("show_cover", value)}
@@ -255,15 +283,29 @@ export function SettingsPage() {
 
           {import.meta.env.DEV && (
             <SettingsItem title="配置文件">
-              <Button type="button" onClick={handleOpenConfig} className="border-border hover:border-border">打开配置文件夹</Button>
+              <Button type="button" onClick={handleOpenConfig} className="border-border hover:border-border">
+                打开配置文件夹
+              </Button>
             </SettingsItem>
           )}
         </div>
       </div>
 
       <div className="flex-center justify-end gap-4 mx-10 py-6 border-t">
-        {status && <span className={cn("flex-1", status?.type === "error" && "text-red-400", status?.type === "warning" && "text-amber-400")}>{status.message}</span>}
-        <Button type="button" onClick={handleReset}>重置</Button>
+        {status && (
+          <span
+            className={cn(
+              "flex-1",
+              status?.type === "error" && "text-red-400",
+              status?.type === "warning" && "text-amber-400",
+            )}
+          >
+            {status.message}
+          </span>
+        )}
+        <Button type="button" onClick={handleReset}>
+          重置
+        </Button>
         <Button type="submit">保存设置</Button>
       </div>
     </form>

@@ -1,6 +1,6 @@
 import { Menu, MenuButton, MenuItem, MenuItems } from "@headlessui/react"
-import { cn } from "@/utils/cn"
 import { EllipsisVertical } from "lucide-react"
+import { cn } from "@/utils/cn"
 
 export function DropdownMenu({ items }) {
   return (
@@ -18,9 +18,10 @@ export function DropdownMenu({ items }) {
           <MenuItem key={index}>
             {() => (
               <button
+                type="button"
                 className={cn(
                   "flex flex-col items-start gap-1 w-full min-h-10 px-4 py-3 hover:text-primary/70 transition",
-                  item.disabled ? "text-muted! cursor-not-allowed" : "cursor-pointer"
+                  item.disabled ? "text-muted! cursor-not-allowed" : "cursor-pointer",
                 )}
                 disabled={item.disabled}
                 onClick={item.onClick}
