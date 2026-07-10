@@ -6,8 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "lint": "eslint .",
-    "fix": "eslint --fix .",
+    "fix": "biome check --write",
     "fmt": "cargo fmt --manifest-path src/Cargo.toml && cargo clippy --fix --allow-dirty --allow-staged --manifest-path src/Cargo.toml"
   },
   "dependencies": {
@@ -27,15 +26,10 @@
     "zustand": "^5.0.14"
   },
   "devDependencies": {
-    "@eslint/js": "^9.39.4",
-    "@stylistic/eslint-plugin": "^5.10.0",
+    "@biomejs/biome": "2.5.2",
     "@tailwindcss/vite": "^4.3.1",
     "@tauri-apps/cli": "^2.11.2",
     "@vitejs/plugin-react": "^6.0.2",
-    "eslint": "^9.39.4",
-    "eslint-plugin-react": "^7.37.5",
-    "eslint-plugin-react-hooks": "^7.1.1",
-    "globals": "^17.6.0",
     "tailwind-scrollbar": "^4.0.2",
     "tailwindcss": "^4.3.1",
     "vite": "^8.0.16"
