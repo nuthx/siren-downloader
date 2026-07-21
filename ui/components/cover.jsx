@@ -1,7 +1,7 @@
-import { invoke, convertFileSrc } from "@tauri-apps/api/core"
-import { useState, useEffect } from "react"
-import { cn } from "@/utils/cn"
+import { convertFileSrc, invoke } from "@tauri-apps/api/core"
 import { ImageOff, LoaderCircle } from "lucide-react"
+import { useEffect, useState } from "react"
+import { cn } from "@/utils/cn"
 
 const coverCache = new Map()
 
@@ -22,7 +22,7 @@ export function AlbumCover({ song, className }) {
       try {
         const coverPath = await invoke("get_cover", {
           albumId: song.album_id,
-          coverUrl: song.cover_ncm
+          coverUrl: song.cover_ncm,
         })
         const result = convertFileSrc(coverPath)
         coverCache.set(song.album_id, result)

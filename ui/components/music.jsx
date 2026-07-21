@@ -1,11 +1,11 @@
-import { listen } from "@tauri-apps/api/event"
 import { invoke } from "@tauri-apps/api/core"
-import { useState, useEffect } from "react"
+import { listen } from "@tauri-apps/api/event"
 import { Check } from "lucide-react"
-import { cn } from "@/utils/cn"
-import { useAppStore } from "@/utils/store"
+import { useEffect, useState } from "react"
 import { AlbumCover } from "@/components/cover"
 import { DropdownMenu } from "@/components/menu"
+import { cn } from "@/utils/cn"
+import { useAppStore } from "@/utils/store"
 
 export function MusicItem({ song, showCover, selected, onToggleSelect }) {
   const { loading, isDownloading, downloadSongs, updateSongStatus } = useAppStore()
@@ -37,14 +37,19 @@ export function MusicItem({ song, showCover, selected, onToggleSelect }) {
   }
 
   return (
-    <div className={cn("relative flex gap-4 items-center h-fit p-4 border backdrop-blur-2xs transition", selected && "border-lime-400/70 bg-lime-400/5")}>
+    <div
+      className={cn(
+        "relative flex gap-4 items-center h-fit p-4 border backdrop-blur-2xs transition",
+        selected && "border-lime-400/70 bg-lime-400/5",
+      )}
+    >
       <button
         type="button"
         className={cn(
           "flex-center size-4 shrink-0 border transition cursor-pointer",
           selected
             ? "border-lime-400 bg-lime-400 text-background"
-            : "border-secondary text-transparent hover:border-primary"
+            : "border-secondary text-transparent hover:border-primary",
         )}
         onClick={() => onToggleSelect(song.id)}
         disabled={loading || isDownloading}
@@ -54,7 +59,9 @@ export function MusicItem({ song, showCover, selected, onToggleSelect }) {
 
       {showCover && <AlbumCover song={song} className="size-20" />}
 
-      {song.download && <div className="absolute top-0 right-0 border-t-10 border-l-10 border-t-lime-400 border-l-transparent" />}
+      {song.download && (
+        <div className="absolute top-0 right-0 border-t-10 border-l-10 border-t-lime-400 border-l-transparent" />
+      )}
 
       {downloadProgress !== null && (
         <div
@@ -79,12 +86,12 @@ export function MusicItem({ song, showCover, selected, onToggleSelect }) {
           {
             label: song.download ? "重新下载歌曲" : "下载歌曲",
             disabled: loading || isDownloading,
-            onClick: () => downloadSongs([song])
+            onClick: () => downloadSongs([song]),
           },
           {
             label: song.download ? "标为未下载" : "标为已下载",
-            onClick: () => handleSetDownloadStatus(!song.download)
-          }
+            onClick: () => handleSetDownloadStatus(!song.download),
+          },
         ]}
       />
     </div>

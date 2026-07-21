@@ -1,5 +1,5 @@
-import packageJson from "#/package.json"
 import { openUrl } from "@tauri-apps/plugin-opener"
+import packageJson from "#/package.json"
 
 export function AboutPage() {
   return (
@@ -10,8 +10,13 @@ export function AboutPage() {
         <span className="text-secondary pt-1">版本 {packageJson.version}</span>
       </div>
 
-      <button onClick={() => openUrl("https://github.com/nuthx/siren-downloader")}>
-        <img src="/logo/github.svg" alt="logo" className="size-6 hover:opacity-70 cursor-pointer transition" draggable="false" />
+      <button type="button" onClick={() => openUrl("https://github.com/nuthx/siren-downloader")}>
+        <img
+          src="/logo/github.svg"
+          alt="logo"
+          className="size-6 hover:opacity-70 cursor-pointer transition"
+          draggable="false"
+        />
       </button>
 
       <div className="flex-center flex-col gap-1 text-xs text-secondary text-center">

@@ -7,7 +7,7 @@ const DEFAULT_CONFIG = {
   download_lyrics: false,
   id3_date_format: "year",
   custom_album: "none",
-  show_cover: true
+  show_cover: true,
 }
 
 const SYSTEM_ALBUM_MATCH = {
@@ -20,7 +20,8 @@ const SYSTEM_ALBUM_MATCH = {
   "冬隐归路OST": "明日方舟：冬隐归路OST",
   "A Toda Vela": "出苍白海OST",
   "焰烬曙明OST": "明日方舟：焰烬曙明OST",
-  "卫戍协议盟约OST": "卫戍协议：盟约OST"
+  "卫戍协议盟约OST": "卫戍协议：盟约OST",
+  "涤墨作战OST": "危机合约涤墨作战OST",
 }
 
 let storeInstance = null

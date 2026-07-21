@@ -1,12 +1,12 @@
 @import "tailwindcss";
 @plugin "tailwind-scrollbar" {
-    nocompatible: true;
+  nocompatible: true;
 }
 
 @theme {
-  --color-primary: #D4D8DD;
-  --color-secondary: #7E8186;
-  --color-muted: #55575A;
+  --color-primary: #d4d8dd;
+  --color-secondary: #7e8186;
+  --color-muted: #55575a;
 
   --color-border: #424446;
   --color-background: #111214;
@@ -23,7 +23,14 @@
     @apply h-screen font-sans text-sm text-primary antialiased select-none overflow-hidden;
   }
 
-  h1, h2, h3, h4, h5, h6, span, p {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  span,
+  p {
     @apply cursor-default;
   }
 
