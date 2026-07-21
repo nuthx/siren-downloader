@@ -21,6 +21,7 @@ const SYSTEM_ALBUM_MATCH = {
   "A Toda Vela": "出苍白海OST",
   焰烬曙明OST: "明日方舟：焰烬曙明OST",
   卫戍协议盟约OST: "卫戍协议：盟约OST",
+  涤墨作战OST: "危机合约涤墨作战OST",
 }
 
 let storeInstance = null
