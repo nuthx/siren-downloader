@@ -2,7 +2,7 @@ use crate::api::{fetch_album_detail, fetch_all_songs, fetch_ncm_albums};
 use crate::config::{load_album_match, load_music_data, save_music_data};
 use crate::models::SongDetail;
 use anyhow::Result;
-use chrono::DateTime;
+use chrono::{DateTime, FixedOffset};
 use futures::stream::{self, StreamExt};
 use serde_json::{json, Value};
 use std::collections::{HashMap, HashSet};
@@ -104,6 +104,7 @@ pub async fn refresh_music_data(app: &AppHandle) -> Result<Value> {
             song.publish =
                 DateTime::from_timestamp(ncm_album["publishTime"].as_i64().unwrap() / 1000, 0)
                     .unwrap()
+                    .with_timezone(&FixedOffset::east_opt(8 * 3600).unwrap())
                     .format("%Y-%m-%d")
                     .to_string();
             song.cover_ncm = ncm_album["picUrl"].as_str().unwrap().to_string();

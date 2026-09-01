@@ -326,7 +326,7 @@ pub async fn download_music(
 
     // 获取并发下载数量配置
     let config = load_app_config(app).await?;
-    let concurrent_downloads = config.concurrent_downloads.max(1).min(10);
+    let concurrent_downloads = config.concurrent_downloads.clamp(1, 10);
 
     let mut success_count = 0;
     let mut fail_count = 0;
