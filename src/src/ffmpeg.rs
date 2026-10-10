@@ -1,31 +1,53 @@
 use anyhow::{bail, Context, Result};
 use reqwest::get;
+use std::env;
 use std::fs::{create_dir_all, remove_file, rename, File};
 use std::io::{copy, Write};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use tauri::{AppHandle, Manager};
 use tauri_plugin_shell::ShellExt;
+
+fn find_ffmpeg_in_paths(paths: Option<std::ffi::OsString>) -> Option<PathBuf> {
+    let paths = paths?;
+    let executable = if cfg!(target_os = "windows") {
+        "ffmpeg.exe"
+    } else {
+        "ffmpeg"
+    };
+
+    env::split_paths(&paths)
+        .map(|directory| directory.join(executable))
+        .find(|path| path.is_file())
+}
 
 // 获取 FFmpeg 路径
 pub fn get_ffmpeg_path(app: &AppHandle) -> Result<String> {
     if cfg!(target_os = "windows") {
         let config_dir = app.path().app_data_dir().context("无法访问应用目录")?;
         let ffmpeg_path = config_dir.join("bin").join("ffmpeg.exe");
-        if ffmpeg_path.exists() {
+        if ffmpeg_path.is_file() {
             Ok(ffmpeg_path.to_string_lossy().to_string())
+        } else if let Some(path) = find_ffmpeg_in_paths(env::var_os("PATH")) {
+            Ok(path.to_string_lossy().to_string())
         } else {
-            bail!("请先下载 FFmpeg")
+            bail!("请先安装 FFmpeg，或通过应用下载 FFmpeg")
         }
     } else if cfg!(target_os = "macos") {
+        if let Some(path) = find_ffmpeg_in_paths(env::var_os("PATH")) {
+            return Ok(path.to_string_lossy().to_string());
+        }
+
         let paths = ["/opt/homebrew/bin/ffmpeg", "/usr/local/bin/ffmpeg"];
         for p in paths {
-            if Path::new(p).exists() {
+            if Path::new(p).is_file() {
                 return Ok(p.to_string());
             }
         }
         bail!("请先通过 Homebrew 安装 FFmpeg: brew install ffmpeg");
     } else {
-        Ok("ffmpeg".to_string())
+        Ok(find_ffmpeg_in_paths(env::var_os("PATH"))
+            .map(|path| path.to_string_lossy().to_string())
+            .unwrap_or_else(|| "ffmpeg".to_string()))
     }
 }
 
@@ -118,4 +140,45 @@ pub async fn delete_ffmpeg(app: &AppHandle) -> Result<()> {
     remove_file(&ffmpeg_path).context("删除 FFmpeg 失败")?;
     println!("[FFmpeg] FFmpeg 已删除");
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::find_ffmpeg_in_paths;
+    use std::env;
+    use std::fs::{create_dir_all, remove_dir_all, File};
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    #[test]
+    fn finds_ffmpeg_in_path_directories() {
+        let unique = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("system time should be after UNIX epoch")
+            .as_nanos();
+        let root = env::temp_dir().join(format!("siren-downloader-ffmpeg-test-{unique}"));
+        let empty_dir = root.join("empty");
+        let bin_dir = root.join("bin");
+        create_dir_all(&empty_dir).expect("create empty PATH directory");
+        create_dir_all(&bin_dir).expect("create FFmpeg PATH directory");
+
+        let executable = if cfg!(target_os = "windows") {
+            "ffmpeg.exe"
+        } else {
+            "ffmpeg"
+        };
+        let expected_path = bin_dir.join(executable);
+        File::create(&expected_path).expect("create fake FFmpeg executable");
+        let path = env::join_paths([&empty_dir, &bin_dir]).expect("build test PATH");
+
+        assert_eq!(
+            find_ffmpeg_in_paths(Some(path)),
+            Some(expected_path.clone())
+        );
+        assert_eq!(
+            find_ffmpeg_in_paths(Some(env::join_paths([&empty_dir]).expect("build empty PATH"))),
+            None
+        );
+
+        remove_dir_all(root).expect("remove test directories");
+    }
 }
