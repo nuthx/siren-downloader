@@ -29,7 +29,7 @@ macOS 需要手动安装 [Homebrew](https://brew.sh) 并通过 `brew install ffm
 
 安装完成后，点击“查看版本”可正确显示 FFmpeg 版本，则表示安装成功
 
-音频输出格式可选择仅 FLAC、FLAC 与 WAV，或仅 WAV。专辑文件夹和歌曲文件名支持自定义模板，可用 `{album}`、`{title}`、`{year}`、`{date}`、`{date:yyMMdd}`、`{month}`、`{day}`、`{track}` 与 `{track:02}` 等参数。
+音频输出格式可选择仅 FLAC、FLAC 与 WAV，或仅 WAV。专辑文件夹和歌曲文件名支持自定义模板，可用 `{album}`、`{title}`、`{id}`、`{year}`、`{date}`、`{date:yyMMdd}`、`{month}`、`{day}`、`{track}` 与 `{track:02}` 等参数；若多首歌曲生成相同文件名，会自动附加歌曲 ID。
 
 ## 使用说明
 

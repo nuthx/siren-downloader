@@ -2,7 +2,8 @@ use crate::api::fetch_song_detail;
 use crate::config::{load_app_config, load_music_data, save_music_data};
 use crate::cover::get_cover_path;
 use crate::ffmpeg::get_ffmpeg_path;
-use crate::utils::{fix_folder_name, render_song_template};
+use crate::models::SongDetail;
+use crate::utils::{fix_filename, fix_folder_name, render_song_template};
 use anyhow::{bail, Context, Result};
 use futures::StreamExt;
 use image::ImageReader;
@@ -11,7 +12,7 @@ use metaflac::Tag as FlacTag;
 use reqwest::get;
 use serde_json::json;
 use std::collections::{HashMap, HashSet};
-use std::fs::{create_dir_all, remove_file, write, File};
+use std::fs::{create_dir_all, remove_file, rename, write, File};
 use std::io::BufReader;
 use std::path::{Path, PathBuf};
 use tauri::{AppHandle, Emitter, Manager};
@@ -31,6 +32,7 @@ fn song_base_path(
     download_path: &str,
     config: &crate::models::AppConfig,
     song: &SongDetail,
+    songs: &[SongDetail],
 ) -> PathBuf {
     let folder_template = if config.album_folder_template.trim().is_empty() {
         "{album}"
@@ -42,22 +44,70 @@ fn song_base_path(
     } else {
         &config.file_name_template
     };
-    let folder_name = fix_folder_name(&render_song_template(folder_template, song));
-    let folder_name = if folder_name.is_empty() {
-        "未命名专辑".to_string()
-    } else {
-        folder_name
+    let render_base_path = |candidate: &SongDetail| {
+        let folder_name = fix_folder_name(&render_song_template(folder_template, candidate));
+        let folder_name = if folder_name.is_empty() {
+            "未命名专辑".to_string()
+        } else {
+            folder_name
+        };
+        let file_name = fix_folder_name(&render_song_template(file_template, candidate));
+        let file_name = if file_name.is_empty() {
+            candidate.id.clone()
+        } else {
+            file_name
+        };
+        PathBuf::from(download_path)
+            .join(folder_name)
+            .join(file_name)
     };
-    let file_name = fix_folder_name(&render_song_template(file_template, song));
-    let file_name = if file_name.is_empty() {
-        song.id.clone()
-    } else {
-        file_name
+    let path_key = |path: &Path| {
+        let path = path.to_string_lossy().into_owned();
+        #[cfg(windows)]
+        {
+            path.to_lowercase()
+        }
+        #[cfg(not(windows))]
+        {
+            path
+        }
     };
+    let base_paths = songs.iter().map(render_base_path).collect::<Vec<_>>();
+    let mut base_path_counts = HashMap::new();
+    for path in &base_paths {
+        *base_path_counts.entry(path_key(path)).or_insert(0usize) += 1;
+    }
+    let reserved_paths = base_path_counts.keys().cloned().collect::<HashSet<_>>();
+    let mut used_paths = HashSet::new();
+    let mut resolved_paths = Vec::with_capacity(base_paths.len());
 
-    PathBuf::from(download_path)
-        .join(folder_name)
-        .join(file_name)
+    for (index, base_path) in base_paths.iter().enumerate() {
+        let key = path_key(base_path);
+        let path = if base_path_counts[&key] > 1 {
+            let file_name = base_path.file_name().unwrap_or_default().to_string_lossy();
+            let mut disambiguated =
+                base_path.with_file_name(format!("{file_name} [{}]", songs[index].id));
+            let mut suffix = 2;
+            while reserved_paths.contains(&path_key(&disambiguated))
+                || used_paths.contains(&path_key(&disambiguated))
+            {
+                disambiguated = base_path
+                    .with_file_name(format!("{file_name} [{}] ({suffix})", songs[index].id));
+                suffix += 1;
+            }
+            disambiguated
+        } else {
+            base_path.clone()
+        };
+        used_paths.insert(path_key(&path));
+        resolved_paths.push(path);
+    }
+
+    songs
+        .iter()
+        .position(|candidate| candidate.id == song.id)
+        .and_then(|index| resolved_paths.get(index).cloned())
+        .unwrap_or_else(|| render_base_path(song))
 }
 
 async fn convert_to_flac(
@@ -131,10 +181,7 @@ async fn write_wav_metadata(
         args.push("-metadata".to_string());
         args.push(format!("{key}={value}"));
     }
-    args.extend([
-        "-y".to_string(),
-        output_path.to_string_lossy().to_string(),
-    ]);
+    args.extend(["-y".to_string(), output_path.to_string_lossy().to_string()]);
 
     let output = app
         .shell()
@@ -193,7 +240,7 @@ async fn download_one_music(app: &AppHandle, song_id: &str) -> Result<()> {
     let ffmpeg_path = get_ffmpeg_path(app)?;
 
     // 获取本地歌曲数据并构建索引
-    let mut songs = load_music_data(app).await?;
+    let songs = load_music_data(app).await?;
     let song_map: HashMap<&str, usize> = songs
         .iter()
         .enumerate()
@@ -278,7 +325,7 @@ async fn download_one_music(app: &AppHandle, song_id: &str) -> Result<()> {
         Vec::new()
     };
 
-    let base_path = song_base_path(&config.download_path, &config, &song);
+    let base_path = song_base_path(&config.download_path, &config, &song, &songs);
     let folder_path = base_path.parent().context("歌曲目录无效")?;
     create_dir_all(folder_path).context("无法创建下载目录")?;
 
@@ -374,17 +421,29 @@ async fn download_one_music(app: &AppHandle, song_id: &str) -> Result<()> {
         rename(&tagged_wav_path, &wav_path).context("保存 WAV 文件失败")?;
     }
 
-    let source_is_output = (keep_wav && source_file_path == wav_path)
-        || (keep_flac && source_file_path == flac_path);
+    let source_is_output =
+        (keep_wav && source_file_path == wav_path) || (keep_flac && source_file_path == flac_path);
     if !source_is_output && source_file_path.exists() {
         if let Err(error) = remove_file(&source_file_path) {
             println!("[Download] 删除临时音频失败，请手动删除: {error}");
         }
     }
 
-    // 更新本地 JSON 中的下载状态
-    songs[song_idx].download = true;
-    save_music_data(app, &songs).await?;
+    // Serialize metadata updates so parallel downloads don't overwrite each other's paths.
+    static MUSIC_DATA_UPDATE_LOCK: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
+    let _update_guard = MUSIC_DATA_UPDATE_LOCK.lock().await;
+    let mut latest_songs = load_music_data(app).await?;
+    let downloaded_song = latest_songs
+        .iter_mut()
+        .find(|item| item.id == song_id)
+        .context("本地不存在该歌曲，请先更新歌曲列表")?;
+    downloaded_song.download = true;
+    downloaded_song.local_path = if keep_flac {
+        flac_path.to_string_lossy().to_string()
+    } else {
+        wav_path.to_string_lossy().to_string()
+    };
+    save_music_data(app, &latest_songs).await?;
     println!("[Download] 下载完成: {}", song.title);
 
     Ok(())
@@ -516,17 +575,48 @@ pub async fn local_song_path(app: &AppHandle, song_id: &str) -> Result<PathBuf> 
         .iter()
         .find(|song| song.id == song_id)
         .context("本地不存在该歌曲，请先更新歌曲列表")?;
-    let base_path = song_base_path(&config.download_path, &config, song);
-    let (keep_wav, keep_flac) = output_formats(&config.audio_format);
+    let mut candidates = Vec::new();
+    if !song.local_path.is_empty() {
+        let stored_path = PathBuf::from(&song.local_path);
+        candidates.push(stored_path.clone());
+        candidates.push(stored_path.with_extension("flac"));
+        candidates.push(stored_path.with_extension("wav"));
+    }
 
-    let extensions = if keep_wav && !keep_flac {
-        ["wav", "flac"]
-    } else {
-        ["flac", "wav"]
+    let base_path = song_base_path(&config.download_path, &config, song, &songs);
+    candidates.push(base_path.with_extension("flac"));
+    candidates.push(base_path.with_extension("wav"));
+
+    // Older song entries have no saved path; also check their original title-based layout.
+    let legacy_folder = match config.custom_album.as_str() {
+        "year" => format!(
+            "[{}] {}",
+            song.publish.get(..4).unwrap_or(""),
+            song.album_title
+        ),
+        "lite" => format!(
+            "[{}{}{}] {}",
+            song.publish.get(2..4).unwrap_or(""),
+            song.publish.get(5..7).unwrap_or(""),
+            song.publish.get(8..10).unwrap_or(""),
+            song.album_title
+        ),
+        "full" => format!(
+            "[{}] {}",
+            song.publish.get(..10).unwrap_or(""),
+            song.album_title
+        ),
+        _ => song.album_title.clone(),
     };
-    let path = extensions
+    let legacy_base = PathBuf::from(&config.download_path)
+        .join(fix_folder_name(&legacy_folder))
+        .join(fix_filename(&song.title));
+    candidates.push(legacy_base.with_extension("flac"));
+    candidates.push(legacy_base.with_extension("wav"));
+    candidates.push(legacy_base.with_extension("mp3"));
+
+    let path = candidates
         .into_iter()
-        .map(|extension| base_path.with_extension(extension))
         .find(|path| path.is_file())
         .context("未找到本地音频文件，请先下载歌曲")?;
     let path = path.canonicalize().context("读取本地音频路径失败")?;

@@ -76,10 +76,7 @@ async fn get_cover(
 }
 
 #[tauri::command]
-async fn get_local_song_path(
-    app: tauri::AppHandle,
-    song_id: String,
-) -> Result<String, String> {
+async fn get_local_song_path(app: tauri::AppHandle, song_id: String) -> Result<String, String> {
     download::local_song_path(&app, &song_id)
         .await
         .map(|path| path.to_string_lossy().to_string())

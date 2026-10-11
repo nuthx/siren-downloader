@@ -44,6 +44,8 @@ pub struct SongDetail {
     pub publish: String,
     pub instrumental: bool,
     pub download: bool,
+    #[serde(default)]
+    pub local_path: String,
 }
 
 impl SongDetail {

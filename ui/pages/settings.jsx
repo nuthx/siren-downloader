@@ -260,7 +260,7 @@ export function SettingsPage() {
 
           <SettingsItem
             title="歌曲文件名模板"
-            desc="可用参数：{title}、{album}、{year}、{date}、{date:yyMMdd}、{month}、{day}、{track}、{track:02}；扩展名由输出格式自动添加"
+            desc="可用参数：{title}、{album}、{id}、{year}、{date}、{date:yyMMdd}、{month}、{day}、{track}、{track:02}；重名歌曲会自动添加 ID，扩展名由输出格式自动添加"
           >
             <Input
               value={config.file_name_template}

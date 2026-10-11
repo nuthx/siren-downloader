@@ -17,7 +17,23 @@ fn find_ffmpeg_in_paths(paths: Option<std::ffi::OsString>) -> Option<PathBuf> {
 
     env::split_paths(&paths)
         .map(|directory| directory.join(executable))
-        .find(|path| path.is_file())
+        .find(|path| is_executable_file(path))
+}
+
+#[cfg(unix)]
+fn is_executable_file(path: &Path) -> bool {
+    use std::os::unix::fs::PermissionsExt;
+
+    path.is_file()
+        && path
+            .metadata()
+            .map(|metadata| metadata.permissions().mode() & 0o111 != 0)
+            .unwrap_or(false)
+}
+
+#[cfg(not(unix))]
+fn is_executable_file(path: &Path) -> bool {
+    path.is_file()
 }
 
 // 获取 FFmpeg 路径
@@ -168,6 +184,27 @@ mod tests {
         };
         let expected_path = bin_dir.join(executable);
         File::create(&expected_path).expect("create fake FFmpeg executable");
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            std::fs::set_permissions(&expected_path, std::fs::Permissions::from_mode(0o755))
+                .expect("make fake FFmpeg executable");
+        }
+
+        #[cfg(unix)]
+        {
+            let non_executable_dir = root.join("non-executable");
+            create_dir_all(&non_executable_dir).expect("create non-executable PATH directory");
+            let non_executable_path = non_executable_dir.join(executable);
+            File::create(&non_executable_path).expect("create non-executable FFmpeg file");
+            let search_path = env::join_paths([&non_executable_dir, &bin_dir])
+                .expect("build PATH with a non-executable file first");
+            assert_eq!(
+                find_ffmpeg_in_paths(Some(search_path)),
+                Some(expected_path.clone())
+            );
+        }
+
         let path = env::join_paths([&empty_dir, &bin_dir]).expect("build test PATH");
 
         assert_eq!(
@@ -175,7 +212,9 @@ mod tests {
             Some(expected_path.clone())
         );
         assert_eq!(
-            find_ffmpeg_in_paths(Some(env::join_paths([&empty_dir]).expect("build empty PATH"))),
+            find_ffmpeg_in_paths(Some(
+                env::join_paths([&empty_dir]).expect("build empty PATH")
+            )),
             None
         );
 

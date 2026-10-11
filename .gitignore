@@ -7,3 +7,6 @@ dist
 # tauri
 src/gen
 src/target
+
+# local build toolchains
+.tools/

@@ -40,6 +40,7 @@ pub fn render_song_template(template: &str, song: &SongDetail) -> String {
         let value = match token {
             "title" => Some(song.title.as_str()),
             "album" => Some(song.album_title.as_str()),
+            "id" => Some(song.id.as_str()),
             "year" => Some(year),
             "date" => Some(date),
             "date:yyMMdd" => None,
