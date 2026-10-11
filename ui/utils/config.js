@@ -8,6 +8,16 @@ const DEFAULT_CONFIG = {
   id3_date_format: "year",
   custom_album: "none",
   show_cover: true,
+  audio_format: "flac",
+  album_folder_template: "{album}",
+  file_name_template: "{title}",
+}
+
+const LEGACY_ALBUM_TEMPLATES = {
+  none: "{album}",
+  year: "[{year}] {album}",
+  lite: "[{date:yyMMdd}] {album}",
+  full: "[{date}] {album}",
 }
 
 const SYSTEM_ALBUM_MATCH = {
@@ -36,14 +46,22 @@ async function getStore() {
 export async function initConfig() {
   const store = await getStore()
   const existingConfig = await store.get("app_config")
-  await store.set("app_config", { ...DEFAULT_CONFIG, ...existingConfig })
+  const mergedConfig = { ...DEFAULT_CONFIG, ...existingConfig }
+  if (existingConfig?.album_folder_template === undefined) {
+    mergedConfig.album_folder_template = LEGACY_ALBUM_TEMPLATES[existingConfig?.custom_album] || "{album}"
+  }
+  await store.set("app_config", mergedConfig)
   await store.set("album_match", SYSTEM_ALBUM_MATCH)
 }
 
 export async function getConfig() {
   const store = await getStore()
   const config = await store.get("app_config")
-  return { ...DEFAULT_CONFIG, ...config }
+  const mergedConfig = { ...DEFAULT_CONFIG, ...config }
+  if (config?.album_folder_template === undefined) {
+    mergedConfig.album_folder_template = LEGACY_ALBUM_TEMPLATES[config?.custom_album] || "{album}"
+  }
+  return mergedConfig
 }
 
 export async function saveConfig(config) {

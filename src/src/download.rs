@@ -2,11 +2,9 @@ use crate::api::fetch_song_detail;
 use crate::config::{load_app_config, load_music_data, save_music_data};
 use crate::cover::get_cover_path;
 use crate::ffmpeg::get_ffmpeg_path;
-use crate::utils::{fix_filename, fix_folder_name};
+use crate::utils::{fix_folder_name, render_song_template};
 use anyhow::{bail, Context, Result};
 use futures::StreamExt;
-use id3::frame::{Frame, Picture, PictureType};
-use id3::{Tag, TagLike, Version};
 use image::ImageReader;
 use metaflac::block::PictureType as FlacPictureType;
 use metaflac::Tag as FlacTag;
@@ -16,10 +14,170 @@ use std::collections::{HashMap, HashSet};
 use std::fs::{create_dir_all, remove_file, write, File};
 use std::io::BufReader;
 use std::path::{Path, PathBuf};
-use tauri::{AppHandle, Emitter};
+use tauri::{AppHandle, Emitter, Manager};
 use tauri_plugin_shell::ShellExt;
 use tokio::fs as async_fs;
 use tokio::io::AsyncWriteExt;
+
+fn output_formats(audio_format: &str) -> (bool, bool) {
+    match audio_format {
+        "wav" => (true, false),
+        "wav_flac" => (true, true),
+        _ => (false, true),
+    }
+}
+
+fn song_base_path(
+    download_path: &str,
+    config: &crate::models::AppConfig,
+    song: &SongDetail,
+) -> PathBuf {
+    let folder_template = if config.album_folder_template.trim().is_empty() {
+        "{album}"
+    } else {
+        &config.album_folder_template
+    };
+    let file_template = if config.file_name_template.trim().is_empty() {
+        "{title}"
+    } else {
+        &config.file_name_template
+    };
+    let folder_name = fix_folder_name(&render_song_template(folder_template, song));
+    let folder_name = if folder_name.is_empty() {
+        "未命名专辑".to_string()
+    } else {
+        folder_name
+    };
+    let file_name = fix_folder_name(&render_song_template(file_template, song));
+    let file_name = if file_name.is_empty() {
+        song.id.clone()
+    } else {
+        file_name
+    };
+
+    PathBuf::from(download_path)
+        .join(folder_name)
+        .join(file_name)
+}
+
+async fn convert_to_flac(
+    app: &AppHandle,
+    ffmpeg_path: &str,
+    input_path: &Path,
+    output_path: &Path,
+    song_title: &str,
+) -> Result<()> {
+    let output = app
+        .shell()
+        .command(ffmpeg_path)
+        .args([
+            "-loglevel",
+            "error",
+            "-i",
+            input_path.to_str().context("音频路径无效")?,
+            "-map",
+            "0:a:0",
+            "-codec:a",
+            "flac",
+            "-level",
+            "0",
+            "-y",
+            output_path.to_str().context("FLAC 路径无效")?,
+        ])
+        .output()
+        .await
+        .context(format!("歌曲转换失败: {song_title}"))?;
+
+    if !output.status.success() {
+        bail!("歌曲转换失败: {}", String::from_utf8_lossy(&output.stderr));
+    }
+
+    Ok(())
+}
+
+async fn write_wav_metadata(
+    app: &AppHandle,
+    ffmpeg_path: &str,
+    input_path: &Path,
+    output_path: &Path,
+    song: &SongDetail,
+    publish_date: &str,
+) -> Result<()> {
+    let audio_codec = if input_path.extension().and_then(|ext| ext.to_str()) == Some("wav") {
+        "copy"
+    } else {
+        "pcm_s16le"
+    };
+    let track_number = song.track.to_string();
+    let mut args = vec![
+        "-loglevel".to_string(),
+        "error".to_string(),
+        "-i".to_string(),
+        input_path.to_string_lossy().to_string(),
+        "-map".to_string(),
+        "0:a:0".to_string(),
+        "-codec:a".to_string(),
+        audio_codec.to_string(),
+    ];
+    for (key, value) in [
+        ("title", song.title.as_str()),
+        ("artist", "塞壬唱片-MSR"),
+        ("album", song.album_title.as_str()),
+        ("album_artist", "塞壬唱片-MSR"),
+        ("track", track_number.as_str()),
+        ("date", publish_date),
+        ("genre", "Arknights"),
+    ] {
+        args.push("-metadata".to_string());
+        args.push(format!("{key}={value}"));
+    }
+    args.extend([
+        "-y".to_string(),
+        output_path.to_string_lossy().to_string(),
+    ]);
+
+    let output = app
+        .shell()
+        .command(ffmpeg_path)
+        .args(args)
+        .output()
+        .await
+        .context(format!("写入 WAV 元数据失败: {}", song.title))?;
+    if !output.status.success() {
+        bail!(
+            "写入 WAV 元数据失败: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
+
+    Ok(())
+}
+
+fn write_flac_metadata(
+    song_path: &Path,
+    song: &SongDetail,
+    cover_data: &[u8],
+    publish_date: &str,
+) -> Result<()> {
+    let mut tag = FlacTag::read_from_path(song_path).context("读取 FLAC 标签失败")?;
+    let comments = tag.vorbis_comments_mut();
+    comments.set_title(vec![song.title.clone()]);
+    comments.set_artist(vec!["塞壬唱片-MSR".to_string()]);
+    comments.set_album(vec![song.album_title.clone()]);
+    comments.set_album_artist(vec!["塞壬唱片-MSR".to_string()]);
+    comments.set("DISCNUMBER", vec!["1"]);
+    comments.set_track(song.track as u32);
+    comments.set("DATE", vec![publish_date]);
+    comments.set_genre(vec!["Arknights".to_string()]);
+    tag.add_picture(
+        "image/jpeg",
+        FlacPictureType::CoverFront,
+        cover_data.to_vec(),
+    );
+    tag.write_to_path(song_path)
+        .context("写入 FLAC 元数据失败")?;
+    Ok(())
+}
 
 // 下载单首歌曲
 async fn download_one_music(app: &AppHandle, song_id: &str) -> Result<()> {
@@ -53,98 +211,83 @@ async fn download_one_music(app: &AppHandle, song_id: &str) -> Result<()> {
     let source_url = song_detail["sourceUrl"]
         .as_str()
         .context("获取下载连接失败")?;
-    let mut format = source_url
-        .rsplit('.')
+    let source_format = source_url
+        .split('?')
         .next()
-        .expect("获取扩展名失败")
-        .to_lowercase();
+        .and_then(|url| url.rsplit_once('.').map(|(_, extension)| extension))
+        .filter(|extension| !extension.is_empty())
+        .unwrap_or("wav")
+        .to_ascii_lowercase();
+    let source_format = if ["wav", "flac", "mp3"].contains(&source_format.as_str()) {
+        source_format
+    } else {
+        "wav".to_string()
+    };
 
-    // 检查网易云封面，必须存在，否则说明歌曲信息获取有误
-    println!("[Download] 获取歌曲封面: {}", song.title);
+    let (_, keep_flac) = output_formats(&config.audio_format);
     let url = &song.cover_ncm;
-    if url.is_empty() {
+    if keep_flac && url.is_empty() {
         bail!("网易云封面为空，请重新更新歌曲列表");
     }
 
-    // 获取封面尺寸
-    let cover_path = get_cover_path(app, &song.album_id, url).await?;
-    let file = File::open(&cover_path).context("打开封面文件失败")?;
-    let reader = ImageReader::new(BufReader::new(file))
-        .with_guessed_format()
-        .context("解析封面格式失败")?;
-    let (width, height) = reader.into_dimensions().context("获取封面尺寸失败")?;
+    let cover_data = if keep_flac {
+        println!("[Download] 获取歌曲封面: {}", song.title);
+        let cover_path = get_cover_path(app, &song.album_id, url).await?;
+        let file = File::open(&cover_path).context("打开封面文件失败")?;
+        let reader = ImageReader::new(BufReader::new(file))
+            .with_guessed_format()
+            .context("解析封面格式失败")?;
+        let (width, height) = reader.into_dimensions().context("获取封面尺寸失败")?;
 
-    // 分辨率大于 1500 则缩小，保存到当前封面目录
-    let cover_data = if width > 1500 || height > 1500 {
-        let resized_cover_path =
-            cover_path.with_file_name(format!("{}_resized.jpg", song.album_id));
-        let output = app
-            .shell()
-            .command(&ffmpeg_path)
-            .args([
-                "-i",
-                cover_path.to_str().context("封面路径无效")?,
-                "-vf",
-                "scale=1500:1500:force_original_aspect_ratio=decrease",
-                "-q:v",
-                "3",
-                "-y",
-                resized_cover_path.to_str().context("缩放封面路径无效")?,
-                "-loglevel",
-                "error",
-            ])
-            .output()
-            .await
-            .context("封面缩放失败")?;
-        if !output.status.success() {
-            bail!("封面缩放失败: {}", String::from_utf8_lossy(&output.stderr));
+        if width > 1500 || height > 1500 {
+            let resized_cover_path =
+                cover_path.with_file_name(format!("{}_resized.jpg", song.album_id));
+            let output = app
+                .shell()
+                .command(&ffmpeg_path)
+                .args([
+                    "-loglevel",
+                    "error",
+                    "-i",
+                    cover_path.to_str().context("封面路径无效")?,
+                    "-vf",
+                    "scale=1500:1500:force_original_aspect_ratio=decrease",
+                    "-q:v",
+                    "3",
+                    "-y",
+                    resized_cover_path.to_str().context("缩放封面路径无效")?,
+                ])
+                .output()
+                .await
+                .context("封面缩放失败")?;
+            if !output.status.success() {
+                bail!("封面缩放失败: {}", String::from_utf8_lossy(&output.stderr));
+            }
+
+            let data = async_fs::read(&resized_cover_path)
+                .await
+                .context("读取缩放封面数据失败")?;
+            let _ = remove_file(&resized_cover_path);
+            data
+        } else {
+            async_fs::read(&cover_path)
+                .await
+                .context("读取封面数据失败")?
         }
-
-        // 读取缩放后的文件数据
-        let data = async_fs::read(&resized_cover_path)
-            .await
-            .context("读取缩放封面数据失败")?;
-
-        // 删除缩放后的文件
-        let _ = remove_file(&resized_cover_path);
-
-        data
     } else {
-        async_fs::read(&cover_path)
-            .await
-            .context("读取封面数据失败")?
+        Vec::new()
     };
 
-    // 根据配置格式化专辑文件夹名称
-    let album_folder = match config.custom_album.as_str() {
-        "year" => {
-            let year = song.publish.get(..4).unwrap_or("");
-            format!("[{}] {}", year, song.album_title)
-        }
-        "lite" => {
-            let yy = song.publish.get(2..4).unwrap_or("");
-            let mm = song.publish.get(5..7).unwrap_or("");
-            let dd = song.publish.get(8..10).unwrap_or("");
-            format!("[{}{}{}] {}", yy, mm, dd, song.album_title)
-        }
-        "full" => {
-            let date = song.publish.get(..10).unwrap_or("");
-            format!("[{}] {}", date, song.album_title)
-        }
-        _ => song.album_title.clone(),
-    };
-
-    // 构建文件路径
-    let folder_path = PathBuf::from(&config.download_path).join(fix_folder_name(&album_folder));
-    create_dir_all(&folder_path).context("无法创建下载目录")?;
-    let base_path = folder_path.join(fix_filename(&song.title));
+    let base_path = song_base_path(&config.download_path, &config, &song);
+    let folder_path = base_path.parent().context("歌曲目录无效")?;
+    create_dir_all(folder_path).context("无法创建下载目录")?;
 
     // 先创建空的歌曲文件
     println!("[Download] 开始下载歌曲: {}", song.title);
     let response = get(source_url).await.context("下载歌曲文件失败")?;
     let total_size = response.content_length().unwrap_or(0);
-    let file_path = base_path.with_extension(&format);
-    let mut file = async_fs::File::create(&file_path)
+    let source_file_path = base_path.with_extension(&source_format);
+    let mut file = async_fs::File::create(&source_file_path)
         .await
         .context("创建歌曲文件失败")?;
 
@@ -189,86 +332,54 @@ async fn download_one_music(app: &AppHandle, song_id: &str) -> Result<()> {
         .context("保存歌词文件失败")?;
     }
 
-    // WAV 需要转换为 FLAC
-    if format == "wav" {
-        println!("[Download] 转换歌曲格式: {}", song.title);
-        let output = app
-            .shell()
-            .command(&ffmpeg_path)
-            .args([
-                "-i",
-                base_path
-                    .with_extension("wav")
-                    .to_str()
-                    .context("WAV 路径无效")?,
-                "-codec:a",
-                "flac",
-                "-level",
-                "0",
-                "-y",
-                base_path
-                    .with_extension("flac")
-                    .to_str()
-                    .context("FLAC 路径无效")?,
-                "-loglevel",
-                "error",
-            ])
-            .output()
-            .await
-            .context(format!("歌曲转换失败: {}", song.title))?;
-        if !output.status.success() {
-            bail!("歌曲转换失败: {}", String::from_utf8_lossy(&output.stderr));
-        }
-        format = "flac".to_string();
-        if let Err(e) = remove_file(base_path.with_extension("wav")) {
-            println!("[Download] 删除 WAV 失败，请手动删除: {}", e);
-        }
-    }
-
-    // 写入元数据
-    println!("[Download] 写入歌曲元数据: {}", song.title);
-    let song_path = base_path.with_extension(&format);
+    let (keep_wav, keep_flac) = output_formats(&config.audio_format);
+    let wav_path = base_path.with_extension("wav");
+    let flac_path = base_path.with_extension("flac");
     let publish_date = match config.id3_date_format.as_str() {
         "full" => &song.publish,
-        _ => &song.publish[..song.publish.len().min(4)],
+        _ => song.publish.get(..4).unwrap_or(""),
     };
-    if format == "mp3" {
-        let mut tag = Tag::new();
-        tag.set_title(&song.title);
-        tag.set_artist("塞壬唱片-MSR");
-        tag.set_album(&song.album_title);
-        tag.set_album_artist("塞壬唱片-MSR");
-        tag.set_disc(1);
-        tag.set_track(song.track as u32);
-        tag.add_frame(Frame::text("TDRC", publish_date));
-        tag.set_genre("Arknights");
-        tag.add_frame(Picture {
-            mime_type: "image/jpeg".to_string(),
-            picture_type: PictureType::CoverFront,
-            description: String::new(),
-            data: cover_data,
-        });
-        tag.write_to_path(&song_path, Version::Id3v24)
-            .context(format!("写入元数据失败: {}", song.title))?;
-    } else if format == "flac" {
-        let mut tag = FlacTag::read_from_path(&song_path).context("读取 FLAC 标签失败")?;
-        let comments = tag.vorbis_comments_mut();
-        comments.set_title(vec![song.title.clone()]);
-        comments.set_artist(vec!["塞壬唱片-MSR".to_string()]);
-        comments.set_album(vec![song.album_title.clone()]);
-        comments.set_album_artist(vec!["塞壬唱片-MSR".to_string()]);
-        comments.set("DISCNUMBER", vec!["1"]);
-        comments.set_track(song.track as u32);
-        comments.set("DATE", vec![publish_date]);
-        comments.set_genre(vec!["Arknights".to_string()]);
-        tag.add_picture("image/jpeg", FlacPictureType::CoverFront, cover_data);
-        tag.write_to_path(&song_path)
-            .context(format!("写入元数据失败: {}", song.title))?;
-    } else {
-        bail!(
-            "当前版本不支持写入 {} 格式的元数据，请发起 Issues 反馈作者",
-            format.to_uppercase()
-        );
+
+    if keep_flac {
+        if source_file_path != flac_path {
+            println!("[Download] 转换歌曲格式: {}", song.title);
+            convert_to_flac(
+                app,
+                &ffmpeg_path,
+                &source_file_path,
+                &flac_path,
+                &song.title,
+            )
+            .await?;
+        }
+        println!("[Download] 写入 FLAC 元数据: {}", song.title);
+        write_flac_metadata(&flac_path, &song, &cover_data, publish_date)?;
+    }
+
+    if keep_wav {
+        println!("[Download] 写入 WAV 元数据: {}", song.title);
+        let tagged_wav_path = base_path.with_extension("tagged.wav");
+        write_wav_metadata(
+            app,
+            &ffmpeg_path,
+            &source_file_path,
+            &tagged_wav_path,
+            &song,
+            publish_date,
+        )
+        .await?;
+        if wav_path.exists() {
+            remove_file(&wav_path).context("替换 WAV 文件失败")?;
+        }
+        rename(&tagged_wav_path, &wav_path).context("保存 WAV 文件失败")?;
+    }
+
+    let source_is_output = (keep_wav && source_file_path == wav_path)
+        || (keep_flac && source_file_path == flac_path);
+    if !source_is_output && source_file_path.exists() {
+        if let Err(error) = remove_file(&source_file_path) {
+            println!("[Download] 删除临时音频失败，请手动删除: {error}");
+        }
     }
 
     // 更新本地 JSON 中的下载状态
@@ -396,4 +507,32 @@ pub async fn download_music(
     }
 
     Ok((success_count, fail_count))
+}
+
+pub async fn local_song_path(app: &AppHandle, song_id: &str) -> Result<PathBuf> {
+    let config = load_app_config(app).await?;
+    let songs = load_music_data(app).await?;
+    let song = songs
+        .iter()
+        .find(|song| song.id == song_id)
+        .context("本地不存在该歌曲，请先更新歌曲列表")?;
+    let base_path = song_base_path(&config.download_path, &config, song);
+    let (keep_wav, keep_flac) = output_formats(&config.audio_format);
+
+    let extensions = if keep_wav && !keep_flac {
+        ["wav", "flac"]
+    } else {
+        ["flac", "wav"]
+    };
+    let path = extensions
+        .into_iter()
+        .map(|extension| base_path.with_extension(extension))
+        .find(|path| path.is_file())
+        .context("未找到本地音频文件，请先下载歌曲")?;
+    let path = path.canonicalize().context("读取本地音频路径失败")?;
+
+    app.asset_protocol_scope()
+        .allow_file(&path)
+        .context("无法打开本地音频文件")?;
+    Ok(path)
 }

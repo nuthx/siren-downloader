@@ -75,6 +75,17 @@ async fn get_cover(
     Ok(path.to_string_lossy().to_string())
 }
 
+#[tauri::command]
+async fn get_local_song_path(
+    app: tauri::AppHandle,
+    song_id: String,
+) -> Result<String, String> {
+    download::local_song_path(&app, &song_id)
+        .await
+        .map(|path| path.to_string_lossy().to_string())
+        .map_err(|error| error.to_string())
+}
+
 // 下载歌曲
 #[tauri::command]
 async fn download_music(
@@ -157,6 +168,7 @@ pub fn run() {
             load_local_music,
             refresh_music_list,
             get_cover,
+            get_local_song_path,
             download_music,
             set_download_status,
             set_all_download_status,

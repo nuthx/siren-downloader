@@ -1,13 +1,13 @@
 import { invoke } from "@tauri-apps/api/core"
 import { listen } from "@tauri-apps/api/event"
-import { Check } from "lucide-react"
+import { Check, Play } from "lucide-react"
 import { useEffect, useState } from "react"
 import { AlbumCover } from "@/components/cover"
 import { DropdownMenu } from "@/components/menu"
 import { cn } from "@/utils/cn"
 import { useAppStore } from "@/utils/store"
 
-export function MusicItem({ song, showCover, selected, onToggleSelect }) {
+export function MusicItem({ song, showCover, selected, onToggleSelect, onPlaySong }) {
   const { loading, isDownloading, downloadSongs, updateSongStatus } = useAppStore()
   const [downloadProgress, setDownloadProgress] = useState(null)
 
@@ -80,6 +80,20 @@ export function MusicItem({ song, showCover, selected, onToggleSelect }) {
           <span className="flex-1 truncate whitespace-nowrap">{song.album_title}</span>
         </div>
       </div>
+
+      <button
+        type="button"
+        title={song.download ? "本地播放" : "请先下载歌曲"}
+        aria-label={`本地播放：${song.title}`}
+        disabled={!song.download || loading}
+        onClick={() => onPlaySong(song)}
+        className={cn(
+          "flex-center size-9 shrink-0 text-secondary hover:text-primary transition",
+          (!song.download || loading) && "text-muted cursor-not-allowed",
+        )}
+      >
+        <Play className="size-4" />
+      </button>
 
       <DropdownMenu
         items={[

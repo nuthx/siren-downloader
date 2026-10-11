@@ -227,7 +227,19 @@ export function SettingsPage() {
             />
           </SettingsItem>
 
-          <SettingsItem title="日期元数据" desc="选择写入音频 ID3 元数据时使用的日期格式">
+          <SettingsItem title="音频输出格式" desc="选择下载后保留的无损音频文件格式">
+            <Select
+              options={[
+                { value: "flac", label: "仅 FLAC" },
+                { value: "wav_flac", label: "FLAC + WAV" },
+                { value: "wav", label: "仅 WAV" },
+              ]}
+              value={config.audio_format}
+              onChange={(value) => handleChange("audio_format", value)}
+            />
+          </SettingsItem>
+
+          <SettingsItem title="日期元数据" desc="选择写入音频元数据时使用的日期格式">
             <Select
               options={[
                 { value: "year", label: "仅年份：2025" },
@@ -238,16 +250,22 @@ export function SettingsPage() {
             />
           </SettingsItem>
 
-          <SettingsItem title="自定义专辑名" desc="是否在保存的专辑文件夹名称前，添加日期前缀">
-            <Select
-              options={[
-                { value: "none", label: "仅专辑名：焰烬曙明" },
-                { value: "year", label: "年份前缀：[2025] 焰烬曙明" },
-                { value: "lite", label: "简单日期前缀：[250905] 焰烬曙明" },
-                { value: "full", label: "完整日期前缀：[2025-09-05] 焰烬曙明" },
-              ]}
-              value={config.custom_album}
-              onChange={(value) => handleChange("custom_album", value)}
+          <SettingsItem title="专辑文件夹模板" desc="可用参数：{album}、{year}、{date}、{date:yyMMdd}、{month}、{day}">
+            <Input
+              value={config.album_folder_template}
+              onInput={(e) => handleChange("album_folder_template", e.target.value)}
+              placeholder="例如 [{year}] {album}"
+            />
+          </SettingsItem>
+
+          <SettingsItem
+            title="歌曲文件名模板"
+            desc="可用参数：{title}、{album}、{year}、{date}、{date:yyMMdd}、{month}、{day}、{track}、{track:02}；扩展名由输出格式自动添加"
+          >
+            <Input
+              value={config.file_name_template}
+              onInput={(e) => handleChange("file_name_template", e.target.value)}
+              placeholder="例如 {track:02} - {title}"
             />
           </SettingsItem>
 

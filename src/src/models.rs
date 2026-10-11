@@ -11,6 +11,24 @@ pub struct AppConfig {
     pub id3_date_format: String,
     pub custom_album: String,
     pub show_cover: bool,
+    #[serde(default = "default_audio_format")]
+    pub audio_format: String,
+    #[serde(default = "default_album_folder_template")]
+    pub album_folder_template: String,
+    #[serde(default = "default_file_name_template")]
+    pub file_name_template: String,
+}
+
+fn default_audio_format() -> String {
+    "flac".to_string()
+}
+
+fn default_album_folder_template() -> String {
+    "{album}".to_string()
+}
+
+fn default_file_name_template() -> String {
+    "{title}".to_string()
 }
 
 // 歌曲详情
