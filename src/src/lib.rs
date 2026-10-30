@@ -149,8 +149,8 @@ pub fn run() {
         .setup(|_app| {
             #[cfg(target_os = "macos")]
             {
-                let menu = menu::create_menu(app)?;
-                app.set_menu(menu)?;
+                let menu = menu::create_menu(_app)?;
+                _app.set_menu(menu)?;
             }
             Ok(())
         })
