@@ -1,3 +1,4 @@
+import { confirm, message } from "@tauri-apps/plugin-dialog"
 import { openUrl } from "@tauri-apps/plugin-opener"
 import { useEffect, useMemo, useRef, useState } from "react"
 import { VirtuosoGrid } from "react-virtuoso"
@@ -14,6 +15,7 @@ export function HomePage() {
   const [selectedFilter, setSelectedFilter] = useState("all")
   const [showCover, setShowCover] = useState(true)
   const [selectedSongIds, setSelectedSongIds] = useState([])
+  const [isConfirmingDownload, setIsConfirmingDownload] = useState(false)
   const selectionAnchor = useRef(null)
 
   // 是否显示封面
@@ -82,14 +84,42 @@ export function HomePage() {
     })
   }
 
-  const handleDownloadSelected = async () => {
-    const result = await downloadSongs(selectedSongs)
-    if (!result?.successSongIds?.length) {
-      return
-    }
+  const handleDownload = async (targets) => {
+    setIsConfirmingDownload(true)
+    try {
+      let songs = targets
+      if (!songs) {
+        const config = await getConfig()
+        songs = (songList || []).filter(
+          (song) => !song.download && (config.download_instrumental || !song.instrumental),
+        )
+      }
 
-    const successSongIds = new Set(result.successSongIds)
-    setSelectedSongIds((current) => current.filter((songId) => !successSongIds.has(songId)))
+      if (songs.length === 0) {
+        return await message("当前没有需要下载的歌曲。", { title: "下载歌曲", okLabel: "确定" })
+      }
+
+      if (
+        (!targets || songs.length > 1) &&
+        !(await confirm(`本次将下载 ${songs.length} 首歌曲，确定继续吗？`, {
+          title: "下载歌曲",
+          kind: "warning",
+          okLabel: "确认下载",
+          cancelLabel: "取消",
+        }))
+      )
+        return
+
+      const result = await downloadSongs(targets)
+      if (targets && result?.successSongIds?.length) {
+        const successSongIds = new Set(result.successSongIds)
+        setSelectedSongIds((current) => current.filter((songId) => !successSongIds.has(songId)))
+      }
+    } catch (error) {
+      console.error("下载失败:", error)
+    } finally {
+      setIsConfirmingDownload(false)
+    }
   }
 
   if (!songList) {
@@ -160,10 +190,13 @@ export function HomePage() {
         <Button onClick={refreshSongList} disabled={loading}>
           更新歌曲列表
         </Button>
-        <Button onClick={handleDownloadSelected} disabled={loading || isDownloading || selectedSongIds.length === 0}>
+        <Button
+          onClick={() => handleDownload(selectedSongs)}
+          disabled={loading || isDownloading || isConfirmingDownload || selectedSongIds.length === 0}
+        >
           下载所选歌曲{selectedSongIds.length > 0 && ` (${selectedSongIds.length})`}
         </Button>
-        <Button onClick={() => downloadSongs()} disabled={loading || isDownloading}>
+        <Button onClick={() => handleDownload()} disabled={loading || isDownloading || isConfirmingDownload}>
           下载所有歌曲
         </Button>
       </div>
