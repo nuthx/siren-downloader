@@ -28,8 +28,11 @@ async fn get_ffmpeg_version(app: tauri::AppHandle) -> Result<String, String> {
 
 // 下载 FFmpeg
 #[tauri::command]
-async fn download_ffmpeg(app: tauri::AppHandle) -> Result<(), String> {
-    ffmpeg::download_ffmpeg(&app)
+async fn download_ffmpeg(
+    app: tauri::AppHandle,
+    on_progress: tauri::ipc::Channel<ffmpeg::DownloadProgress>,
+) -> Result<(), String> {
+    ffmpeg::download_ffmpeg(&app, on_progress)
         .await
         .map_err(|e| e.to_string())
 }
@@ -143,7 +146,7 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_os::init())
-        .setup(|app| {
+        .setup(|_app| {
             #[cfg(target_os = "macos")]
             {
                 let menu = menu::create_menu(app)?;
