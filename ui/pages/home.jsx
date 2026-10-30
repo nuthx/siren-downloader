@@ -1,5 +1,5 @@
 import { openUrl } from "@tauri-apps/plugin-opener"
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { VirtuosoGrid } from "react-virtuoso"
 import { Button } from "@/components/button"
 import { MusicItem } from "@/components/music"
@@ -14,6 +14,7 @@ export function HomePage() {
   const [selectedFilter, setSelectedFilter] = useState("all")
   const [showCover, setShowCover] = useState(true)
   const [selectedSongIds, setSelectedSongIds] = useState([])
+  const selectionAnchor = useRef(null)
 
   // 是否显示封面
   useEffect(() => {
@@ -59,10 +60,26 @@ export function HomePage() {
     [songList, selectedSongIdSet],
   )
 
-  const toggleSongSelection = (songId) => {
-    setSelectedSongIds((current) =>
-      current.includes(songId) ? current.filter((id) => id !== songId) : [...current, songId],
-    )
+  const handleSongSelection = (songId, event) => {
+    if (loading || isDownloading) return
+
+    if (event.shiftKey) {
+      const anchorIndex = filteredSongs.findIndex((song) => song.id === selectionAnchor.current)
+      const songIndex = filteredSongs.findIndex((song) => song.id === songId)
+      if (anchorIndex !== -1 && songIndex !== -1) {
+        const range = filteredSongs
+          .slice(Math.min(anchorIndex, songIndex), Math.max(anchorIndex, songIndex) + 1)
+          .map((song) => song.id)
+        setSelectedSongIds((current) => (event.ctrlKey || event.metaKey ? [...new Set([...current, ...range])] : range))
+        return
+      }
+    }
+
+    selectionAnchor.current = songId
+    setSelectedSongIds((current) => {
+      if (!event.ctrlKey && !event.metaKey) return [songId]
+      return current.includes(songId) ? current.filter((id) => id !== songId) : [...current, songId]
+    })
   }
 
   const handleDownloadSelected = async () => {
@@ -115,7 +132,7 @@ export function HomePage() {
             song={filteredSongs[index]}
             showCover={showCover}
             selected={selectedSongIdSet.has(filteredSongs[index].id)}
-            onToggleSelect={toggleSongSelection}
+            onSelect={handleSongSelection}
           />
         )}
       />
@@ -144,7 +161,7 @@ export function HomePage() {
           更新歌曲列表
         </Button>
         <Button onClick={handleDownloadSelected} disabled={loading || isDownloading || selectedSongIds.length === 0}>
-          下载所选歌曲
+          下载所选歌曲{selectedSongIds.length > 0 && ` (${selectedSongIds.length})`}
         </Button>
         <Button onClick={() => downloadSongs()} disabled={loading || isDownloading}>
           下载所有歌曲

@@ -1,13 +1,12 @@
 import { invoke } from "@tauri-apps/api/core"
 import { listen } from "@tauri-apps/api/event"
-import { Check } from "lucide-react"
 import { useEffect, useState } from "react"
 import { AlbumCover } from "@/components/cover"
 import { DropdownMenu } from "@/components/menu"
 import { cn } from "@/utils/cn"
 import { useAppStore } from "@/utils/store"
 
-export function MusicItem({ song, showCover, selected, onToggleSelect }) {
+export function MusicItem({ song, showCover, selected, onSelect }) {
   const { loading, isDownloading, downloadSongs, updateSongStatus } = useAppStore()
   const [downloadProgress, setDownloadProgress] = useState(null)
 
@@ -37,49 +36,40 @@ export function MusicItem({ song, showCover, selected, onToggleSelect }) {
   }
 
   return (
+    // biome-ignore lint/a11y/useFocusableInteractive lint/a11y/useKeyWithClickEvents: 歌曲卡片仅通过鼠标选择
     <div
+      role="option"
       className={cn(
-        "relative flex gap-4 items-center h-fit p-4 border backdrop-blur-2xs transition",
+        "relative flex items-center gap-4 h-fit p-4 border backdrop-blur-2xs transition",
         selected && "border-lime-400/70 bg-lime-400/5",
       )}
+      onClick={(event) => {
+        if (!event.target.closest("button, [role='menu']")) onSelect(song.id, event)
+      }}
     >
-      <button
-        type="button"
-        className={cn(
-          "flex-center size-4 shrink-0 border transition cursor-pointer",
-          selected
-            ? "border-lime-400 bg-lime-400 text-background"
-            : "border-secondary text-transparent hover:border-primary",
-        )}
-        onClick={() => onToggleSelect(song.id)}
-        disabled={loading || isDownloading}
-      >
-        <Check className="size-3.5" />
-      </button>
+      {showCover && <AlbumCover song={song} className="size-20 shrink-0" />}
 
-      {showCover && <AlbumCover song={song} className="size-20" />}
+      <span className="flex-1 flex flex-col gap-1 min-w-0">
+        <span className="text-base font-semibold">{song.title}</span>
+        <span className="flex items-center gap-3 text-secondary">
+          {song.instrumental && <span className="text-amber-400">伴奏</span>}
+          {song.instrumental && <span className="w-px h-3 bg-secondary rotate-16" />}
+          <span>{song.publish}</span>
+          <span className="w-px h-3 bg-secondary rotate-16" />
+          <span className="flex-1 truncate whitespace-nowrap">{song.album_title}</span>
+        </span>
+      </span>
 
       {song.download && (
-        <div className="absolute top-0 right-0 border-t-10 border-l-10 border-t-lime-400 border-l-transparent" />
+        <div className="absolute top-0 right-0 border-t-10 border-l-10 border-t-lime-400 border-l-transparent pointer-events-none" />
       )}
 
       {downloadProgress !== null && (
         <div
-          className="absolute left-0 bottom-0 h-0.75 bg-lime-400 transition"
+          className="absolute left-0 bottom-0 h-0.75 bg-lime-400 transition pointer-events-none"
           style={{ width: `${downloadProgress}%` }}
         />
       )}
-
-      <div className="flex-1 flex flex-col gap-1 min-w-0">
-        <h5 className="text-base font-semibold">{song.title}</h5>
-        <div className="flex items-center gap-3 text-secondary">
-          {song.instrumental && <span className="text-amber-400">伴奏</span>}
-          {song.instrumental && <div className="w-px h-3 bg-secondary rotate-16" />}
-          <span>{song.publish}</span>
-          <div className="w-px h-3 bg-secondary rotate-16" />
-          <span className="flex-1 truncate whitespace-nowrap">{song.album_title}</span>
-        </div>
-      </div>
 
       <DropdownMenu
         items={[
