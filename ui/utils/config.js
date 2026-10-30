@@ -10,6 +10,7 @@ const DEFAULT_CONFIG = {
   show_cover: true,
 }
 
+// 左侧塞壬唱片；右侧网易云
 const SYSTEM_ALBUM_MATCH = {
   "Operation Barrenland": "Operation Barrenland (W&W Soundtrack Mix)",
   "危机合约黄铁·利刃·燃灰OST": "危机合约 黄铁·利刃·燃灰OST",
@@ -22,6 +23,8 @@ const SYSTEM_ALBUM_MATCH = {
   "焰烬曙明OST": "明日方舟：焰烬曙明OST",
   "卫戍协议盟约OST": "卫戍协议：盟约OST",
   "涤墨作战OST": "危机合约涤墨作战OST",
+  月行水上: "月行水上OST",
+  "视相博物馆：演化": "视相博物馆：演化OST",
 }
 
 let storeInstance = null

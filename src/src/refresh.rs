@@ -85,11 +85,11 @@ pub async fn refresh_music_data(app: &AppHandle) -> Result<Value> {
     // 获取网易云的塞壬唱片的所有专辑信息
     let ncm_albums = fetch_ncm_albums().await?;
 
-    // 预读匹配列表，并构建专辑名到专辑信息的映射
+    // 预读匹配列表，并统一专辑名大小写后构建索引
     let match_list = load_album_match(app).await;
     let ncm_map: HashMap<_, _> = ncm_albums
         .iter()
-        .filter_map(|a| a["name"].as_str().map(|n| (n.trim(), a)))
+        .filter_map(|a| a["name"].as_str().map(|n| (n.trim().to_lowercase(), a)))
         .collect();
 
     for song in final_songs.iter_mut() {
@@ -97,7 +97,8 @@ pub async fn refresh_music_data(app: &AppHandle) -> Result<Value> {
         let ncm_album_name = match_list
             .get(&song.album_title)
             .unwrap_or(&song.album_title)
-            .trim();
+            .trim()
+            .to_lowercase();
 
         // 查询匹配并写入网易云的封面和发布时间到SongDetail
         if let Some(ncm_album) = ncm_map.get(&ncm_album_name) {
