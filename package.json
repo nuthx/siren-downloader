@@ -1,7 +1,7 @@
 {
   "name": "siren-downloader",
   "private": true,
-  "version": "0.3.6",
+  "version": "0.3.7",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -11,27 +11,27 @@
   },
   "dependencies": {
     "@headlessui/react": "^2.2.10",
-    "@tauri-apps/api": "^2.11.1",
-    "@tauri-apps/plugin-dialog": "^2.7.2",
-    "@tauri-apps/plugin-opener": "^2.5.4",
-    "@tauri-apps/plugin-os": "^2.3.2",
-    "@tauri-apps/plugin-store": "^2.4.4",
+    "@tauri-apps/api": "^2.12.4",
+    "@tauri-apps/plugin-dialog": "^2.8.4",
+    "@tauri-apps/plugin-opener": "^2.7.2",
+    "@tauri-apps/plugin-os": "^2.4.0",
+    "@tauri-apps/plugin-store": "^2.5.0",
     "clsx": "^2.1.1",
-    "lucide-react": "^1.37.0",
-    "react": "^19.2.8",
-    "react-dom": "^19.2.8",
-    "react-router-dom": "^7.18.3",
-    "react-virtuoso": "^4.18.12",
-    "tailwind-merge": "^3.6.0",
-    "zustand": "^5.0.15"
+    "lucide-react": "^1.64.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "react-router-dom": "^7.18.5",
+    "react-virtuoso": "^4.18.20",
+    "tailwind-merge": "^3.7.0",
+    "zustand": "^5.0.16"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.11",
     "@tailwindcss/vite": "^4.3.3",
-    "@tauri-apps/cli": "^2.11.4",
-    "@vitejs/plugin-react": "^6.1.1",
+    "@tauri-apps/cli": "^2.12.4",
+    "@vitejs/plugin-react": "^6.1.2",
     "tailwind-scrollbar": "^4.0.2",
     "tailwindcss": "^4.3.3",
-    "vite": "^8.2.2"
+    "vite": "^8.3.5"
   }
 }

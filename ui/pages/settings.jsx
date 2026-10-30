@@ -1,4 +1,4 @@
-import { invoke } from "@tauri-apps/api/core"
+import { Channel, invoke } from "@tauri-apps/api/core"
 import { appDataDir } from "@tauri-apps/api/path"
 import { open } from "@tauri-apps/plugin-dialog"
 import { openPath } from "@tauri-apps/plugin-opener"
@@ -12,11 +12,17 @@ import { cn } from "@/utils/cn"
 import { getConfig, resetConfig, saveConfig } from "@/utils/config"
 import { useAppStore } from "@/utils/store"
 
+const ffmpegMessages = {
+  connecting: "正在连接下载服务器",
+  extracting: "下载完成，正在解压",
+  checking: "正在检查 FFmpeg 版本",
+}
+
 export function SettingsPage() {
   const { songList, setAllSongStatuses } = useAppStore()
   const [config, setConfig] = useState(null)
   const [status, setStatus] = useState(null)
-  const [isDownloading, setIsDownloading] = useState(false)
+  const [ffmpegMessage, setFFmpegMessage] = useState(null)
   const [isUpdatingDownloadStatus, setIsUpdatingDownloadStatus] = useState(false)
 
   // 加载配置
@@ -45,16 +51,27 @@ export function SettingsPage() {
 
   // 下载 FFmpeg
   const handleDownloadFFmpeg = async () => {
-    setIsDownloading(true)
-    setStatus({ type: "default", message: "正在下载 FFmpeg，请稍候..." })
+    setFFmpegMessage(ffmpegMessages.connecting)
     try {
-      await invoke("download_ffmpeg")
+      const onProgress = new Channel()
+      onProgress.onmessage = ({ stage, downloaded, total }) => {
+        if (stage !== "downloading") {
+          setFFmpegMessage(ffmpegMessages[stage])
+          return
+        }
+
+        const downloadedMB = (downloaded / 1024 / 1024).toFixed(1)
+        const totalSize = total ? ` / ${(total / 1024 / 1024).toFixed(1)} MB` : ""
+        setFFmpegMessage(`正在下载 FFmpeg：${downloadedMB} MB${totalSize}`)
+      }
+      await invoke("download_ffmpeg", { onProgress })
+      setFFmpegMessage(ffmpegMessages.checking)
       const version = await invoke("get_ffmpeg_version")
       setStatus({ type: "default", message: `下载成功: ${version}` })
     } catch (error) {
       setStatus({ type: "error", message: `下载失败: ${error}` })
     } finally {
-      setIsDownloading(false)
+      setFFmpegMessage(null)
     }
   }
 
@@ -154,7 +171,7 @@ export function SettingsPage() {
                 <Button
                   type="button"
                   onClick={handleDownloadFFmpeg}
-                  disabled={isDownloading}
+                  disabled={ffmpegMessage !== null}
                   className="border-border hover:border-border"
                 >
                   下载 FFmpeg
@@ -162,7 +179,7 @@ export function SettingsPage() {
                 <Button
                   type="button"
                   onClick={handleDeleteFFmpeg}
-                  disabled={isDownloading}
+                  disabled={ffmpegMessage !== null}
                   className="border-border hover:border-border"
                 >
                   删除 FFmpeg
@@ -172,7 +189,7 @@ export function SettingsPage() {
             <Button
               type="button"
               onClick={handleCheckVersion}
-              disabled={isDownloading}
+              disabled={ffmpegMessage !== null}
               className="border-border hover:border-border"
             >
               查看版本
@@ -292,15 +309,16 @@ export function SettingsPage() {
       </div>
 
       <div className="flex-center justify-end gap-4 mx-10 py-6 border-t">
-        {status && (
+        {(ffmpegMessage !== null || status) && (
           <span
+            role="status"
             className={cn(
               "flex-1",
-              status?.type === "error" && "text-red-400",
-              status?.type === "warning" && "text-amber-400",
+              ffmpegMessage === null && status?.type === "error" && "text-red-400",
+              ffmpegMessage === null && status?.type === "warning" && "text-amber-400",
             )}
           >
-            {status.message}
+            {ffmpegMessage ?? status?.message}
           </span>
         )}
         <Button type="button" onClick={handleReset}>
